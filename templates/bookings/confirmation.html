@@ -1,0 +1,141 @@
+{% extends "base.html" %}
+
+{% block title %}Reservation Guaranteed: {{ reservation.booking_reference }} | GrandView{% endblock %}
+
+{% block content %}
+<div class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
+
+    <!-- Success Header -->
+    <div class="text-center mb-8">
+        <div class="w-16 h-16 rounded-full bg-emerald-500/20 border-2 border-emerald-500 text-emerald-400 flex items-center justify-center mx-auto mb-3 shadow-lg shadow-emerald-500/10">
+            <i data-lucide="check" class="w-8 h-8"></i>
+        </div>
+        <span class="text-xs font-mono uppercase tracking-widest text-emerald-400 font-bold">Booking Guaranteed & Confirmed</span>
+        <h1 class="text-3xl font-serif font-bold text-white mt-1">We Look Forward to Welcoming You</h1>
+        <p class="text-xs sm:text-sm text-slate-400 mt-2">
+            A confirmation voucher and receipt has been recorded for <strong class="text-white">{{ reservation.guest_email }}</strong>.
+        </p>
+    </div>
+
+    <!-- Printable Voucher Card -->
+    <div class="bg-slate-900 border-2 border-slate-700 rounded-3xl overflow-hidden shadow-2xl printable-voucher">
+        <!-- Voucher Gold Top Ribbon -->
+        <div class="bg-gradient-to-r from-amber-600 via-amber-500 to-amber-600 px-6 py-4 flex flex-wrap items-center justify-between gap-4 text-slate-950">
+            <div>
+                <span class="text-[10px] font-mono uppercase tracking-widest font-bold">Official Booking Reference</span>
+                <div class="text-2xl font-mono font-bold tracking-wider">{{ reservation.booking_reference }}</div>
+            </div>
+            <div class="text-right">
+                <span class="px-3 py-1 bg-slate-950 text-amber-400 rounded-full text-xs font-mono font-bold">
+                    {{ reservation.get_status_display }}
+                </span>
+            </div>
+        </div>
+
+        <div class="p-6 sm:p-8 space-y-8">
+            <!-- Reservation Itinerary Grid -->
+            <div class="grid grid-cols-1 sm:grid-cols-3 gap-4 pb-6 border-b border-slate-800">
+                <div class="bg-slate-950 p-4 rounded-xl border border-slate-800">
+                    <span class="text-[10px] font-mono uppercase text-slate-400">Check-In</span>
+                    <div class="text-base font-bold text-white mt-1">{{ reservation.check_in }}</div>
+                    <span class="text-xs text-amber-400 font-mono">From 14:00 (2:00 PM)</span>
+                </div>
+
+                <div class="bg-slate-950 p-4 rounded-xl border border-slate-800">
+                    <span class="text-[10px] font-mono uppercase text-slate-400">Check-Out</span>
+                    <div class="text-base font-bold text-white mt-1">{{ reservation.check_out }}</div>
+                    <span class="text-xs text-amber-400 font-mono">Until 11:00 (11:00 AM)</span>
+                </div>
+
+                <div class="bg-slate-950 p-4 rounded-xl border border-slate-800">
+                    <span class="text-[10px] font-mono uppercase text-slate-400">Stay Duration</span>
+                    <div class="text-base font-bold text-white mt-1">{{ reservation.num_nights }} Night{{ reservation.num_nights|pluralize }}</div>
+                    <span class="text-xs text-slate-400 font-mono">{{ reservation.guests_count }} Registered Guest{{ reservation.guests_count|pluralize }}</span>
+                </div>
+            </div>
+
+            <!-- Suite & Guest Assignment -->
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-6">
+                <!-- Suite Info -->
+                <div>
+                    <h3 class="text-xs font-mono uppercase tracking-wider text-slate-400 mb-2">Assigned Suite & Room</h3>
+                    <div class="bg-slate-950 p-4 rounded-xl border border-slate-800 flex items-center space-x-4">
+                        <img src="{{ reservation.room_type.image_url }}" alt="{{ reservation.room_type.name }}" class="w-16 h-16 rounded-lg object-cover">
+                        <div>
+                            <div class="text-sm font-bold text-white">{{ reservation.room_type.name }}</div>
+                            <div class="text-xs text-amber-400 font-mono mt-0.5">Physical Room: #{{ reservation.room.room_number }} (Floor {{ reservation.room.floor }})</div>
+                            <div class="text-[11px] text-slate-400">{{ reservation.room_type.bed_type }}</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Guest Profile -->
+                <div>
+                    <h3 class="text-xs font-mono uppercase tracking-wider text-slate-400 mb-2">Primary Guest Record</h3>
+                    <div class="bg-slate-950 p-4 rounded-xl border border-slate-800 space-y-1 text-xs font-mono">
+                        <div class="text-white font-bold">{{ reservation.guest_name }}</div>
+                        <div class="text-slate-400">{{ reservation.guest_email }}</div>
+                        <div class="text-slate-400">{{ reservation.guest_phone }}</div>
+                        {% if reservation.special_requests %}
+                        <div class="text-amber-400 pt-1 text-[11px]">Note: {{ reservation.special_requests }}</div>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+
+            <!-- Financial Receipt Breakdown -->
+            <div>
+                <h3 class="text-xs font-mono uppercase tracking-wider text-slate-400 mb-2">Financial Settlement Receipt</h3>
+                <div class="bg-slate-950 rounded-xl border border-slate-800 p-4 text-xs font-mono space-y-2">
+                    <div class="flex justify-between text-slate-300">
+                        <span>Room Accommodation ({{ reservation.num_nights }} nights @ avg ${{ reservation.nightly_rate }}):</span>
+                        <span>${{ reservation.room_subtotal }}</span>
+                    </div>
+
+                    {% if reservation.addons_amount > 0 %}
+                    <div class="flex justify-between text-slate-300">
+                        <span>Hospitality Add-Ons & Services:</span>
+                        <span>${{ reservation.addons_amount }}</span>
+                    </div>
+                    {% endif %}
+
+                    <div class="flex justify-between text-slate-400">
+                        <span>Hotel Occupancy Tax:</span>
+                        <span>${{ reservation.tax_amount }}</span>
+                    </div>
+
+                    <div class="flex justify-between text-slate-400">
+                        <span>Resort Concierge Fee:</span>
+                        <span>${{ reservation.service_fee }}</span>
+                    </div>
+
+                    <div class="pt-2 border-t border-slate-800 flex justify-between text-sm font-bold text-white">
+                        <span>Total Paid in Full:</span>
+                        <span class="text-amber-400">${{ reservation.total_amount }}</span>
+                    </div>
+
+                    <div class="pt-2 text-[11px] text-slate-400 flex flex-wrap justify-between gap-2 border-t border-slate-900">
+                        <span>Transaction ID: <span class="text-slate-300">{{ reservation.transaction_id }}</span></span>
+                        <span>Method: <span class="text-emerald-400">{{ reservation.payment_method }}</span></span>
+                        <span>Timestamp: <span class="text-slate-300">{{ reservation.paid_at|date:"Y-m-d H:i" }} UTC</span></span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Voucher Actions Footer -->
+        <div class="bg-slate-950/80 px-6 py-4 border-t border-slate-800 flex flex-wrap items-center justify-between gap-4">
+            <button onclick="window.print()" class="px-4 py-2 bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-semibold rounded-lg border border-slate-700 transition flex items-center space-x-1">
+                <i data-lucide="printer" class="w-4 h-4"></i>
+                <span>Print Voucher / Save PDF</span>
+            </button>
+
+            <div class="flex items-center space-x-3">
+                <a href="{% url 'bookings:guest_bookings' %}" class="px-4 py-2 bg-amber-500 hover:bg-amber-400 text-slate-950 text-xs font-bold rounded-lg transition">
+                    View My Stays &rarr;
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

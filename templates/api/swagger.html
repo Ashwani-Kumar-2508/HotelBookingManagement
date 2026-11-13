@@ -1,0 +1,62 @@
+{% extends "base.html" %}
+
+{% block title %}Interactive REST API Documentation | GrandView Hotel PMS{% endblock %}
+
+{% block extra_head %}
+<link rel="stylesheet" href="https://unpkg.com/swagger-ui-dist@5.11.0/swagger-ui.css" />
+<style>
+    .swagger-ui .topbar { display: none !important; }
+    .swagger-ui {
+        filter: invert(88%) hue-rotate(180deg);
+    }
+    .swagger-ui .wrapper {
+        padding: 0 !important;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+
+    <div class="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6">
+        <div>
+            <div class="flex items-center space-x-2">
+                <span class="px-2.5 py-0.5 rounded text-[10px] font-mono font-bold bg-amber-500/20 text-amber-300 border border-amber-500/30 uppercase">
+                    REST API Specification
+                </span>
+                <span class="text-xs text-slate-400 font-mono">OpenAPI 3.0.3</span>
+            </div>
+            <h1 class="text-2xl sm:text-3xl font-serif font-bold text-white mt-1">GrandView Interactive API Console</h1>
+            <p class="text-xs text-slate-400 mt-1">Live endpoint testing for availability queries, temporary holds, concurrency-safe confirmations, check-in/out, and operations reports.</p>
+        </div>
+
+        <a href="{% url 'api:openapi_spec' %}" target="_blank" class="px-3.5 py-2 bg-slate-800 hover:bg-slate-700 text-amber-400 text-xs font-mono font-bold rounded-lg border border-slate-700 transition flex items-center space-x-1.5">
+            <i data-lucide="external-link" class="w-4 h-4"></i>
+            <span>Raw openapi.json</span>
+        </a>
+    </div>
+
+    <!-- Swagger UI Embed Container -->
+    <div class="bg-white rounded-2xl p-6 shadow-2xl overflow-hidden">
+        <div id="swagger-ui"></div>
+    </div>
+
+</div>
+{% endblock %}
+
+{% block extra_scripts %}
+<script src="https://unpkg.com/swagger-ui-dist@5.11.0/swagger-ui-bundle.js"></script>
+<script>
+    window.onload = function() {
+        SwaggerUIBundle({
+            url: "{% url 'api:openapi_spec' %}",
+            dom_id: '#swagger-ui',
+            deepLinking: true,
+            presets: [
+                SwaggerUIBundle.presets.apis,
+            ],
+            layout: "BaseLayout"
+        });
+    }
+</script>
+{% endblock %}

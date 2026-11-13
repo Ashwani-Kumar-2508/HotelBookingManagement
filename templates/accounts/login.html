@@ -1,0 +1,108 @@
+{% extends "base.html" %}
+
+{% block title %}Sign In | GrandView Hotel & Resort{% endblock %}
+
+{% block content %}
+<div class="max-w-4xl mx-auto px-4 py-12">
+    <!-- Header -->
+    <div class="text-center mb-8">
+        <span class="w-12 h-12 rounded-xl bg-amber-500 text-slate-950 font-serif font-bold text-2xl flex items-center justify-center mx-auto shadow-lg shadow-amber-500/20 mb-3">
+            G
+        </span>
+        <h1 class="text-2xl sm:text-3xl font-serif font-bold text-white">GrandView Hotel Sign In</h1>
+        <p class="text-xs sm:text-sm text-slate-400 mt-1">Access your guest reservations, front desk console, or operations portal.</p>
+    </div>
+
+    <!-- Reviewer 1-Click Quick Demo Sign-In Box -->
+    <div class="bg-gradient-to-br from-slate-900 to-slate-800 border-2 border-amber-500/40 rounded-2xl p-6 mb-8 shadow-xl">
+        <div class="flex items-center space-x-2 mb-4">
+            <span class="inline-block w-2.5 h-2.5 rounded-full bg-amber-400 animate-ping"></span>
+            <h2 class="text-sm font-bold text-amber-300 uppercase tracking-wider font-mono">1-Click Instant Reviewer Sign-In</h2>
+            <span class="text-xs text-slate-400">(No password entry required)</span>
+        </div>
+
+        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+            <!-- Admin -->
+            <form action="{% url 'accounts:login' %}" method="post">
+                {% csrf_token %}
+                <input type="hidden" name="demo_role" value="admin">
+                <button type="submit" class="w-full text-left p-3.5 rounded-xl bg-slate-950/90 border border-amber-500/50 hover:bg-amber-950/40 hover:border-amber-400 transition group">
+                    <div class="text-xs font-bold text-amber-300 flex items-center justify-between">
+                        <span>👑 Hotel Admin</span>
+                        <span class="text-[10px] text-amber-400 font-mono">Sign In &rarr;</span>
+                    </div>
+                    <div class="text-[11px] text-slate-300 mt-1 font-mono">admin@grandview.com</div>
+                    <div class="text-[10px] text-slate-400 mt-0.5">Rates, CRUD, Occupancy & Revenue reports</div>
+                </button>
+            </form>
+
+            <!-- Front Desk -->
+            <form action="{% url 'accounts:login' %}" method="post">
+                {% csrf_token %}
+                <input type="hidden" name="demo_role" value="staff">
+                <button type="submit" class="w-full text-left p-3.5 rounded-xl bg-slate-950/90 border border-blue-500/50 hover:bg-blue-950/40 hover:border-blue-400 transition group">
+                    <div class="text-xs font-bold text-blue-300 flex items-center justify-between">
+                        <span>🛎️ Front Desk Staff</span>
+                        <span class="text-[10px] text-blue-400 font-mono">Sign In &rarr;</span>
+                    </div>
+                    <div class="text-[11px] text-slate-300 mt-1 font-mono">staff@grandview.com</div>
+                    <div class="text-[10px] text-slate-400 mt-0.5">Check-in, Check-out, Housekeeping board</div>
+                </button>
+            </form>
+
+            <!-- Guest 1 -->
+            <form action="{% url 'accounts:login' %}" method="post">
+                {% csrf_token %}
+                <input type="hidden" name="demo_role" value="guest">
+                <button type="submit" class="w-full text-left p-3.5 rounded-xl bg-slate-950/90 border border-emerald-500/50 hover:bg-emerald-950/40 hover:border-emerald-400 transition group">
+                    <div class="text-xs font-bold text-emerald-300 flex items-center justify-between">
+                        <span>👤 Guest (David)</span>
+                        <span class="text-[10px] text-emerald-400 font-mono">Sign In &rarr;</span>
+                    </div>
+                    <div class="text-[11px] text-slate-300 mt-1 font-mono">guest@example.com</div>
+                    <div class="text-[10px] text-slate-400 mt-0.5">Active stay in Room 201, book & cancel</div>
+                </button>
+            </form>
+
+            <!-- Guest 2 -->
+            <form action="{% url 'accounts:login' %}" method="post">
+                {% csrf_token %}
+                <input type="hidden" name="demo_role" value="guest2">
+                <button type="submit" class="w-full text-left p-3.5 rounded-xl bg-slate-950/90 border border-purple-500/50 hover:bg-purple-950/40 hover:border-purple-400 transition group">
+                    <div class="text-xs font-bold text-purple-300 flex items-center justify-between">
+                        <span>👤 Guest (Sarah)</span>
+                        <span class="text-[10px] text-purple-400 font-mono">Sign In &rarr;</span>
+                    </div>
+                    <div class="text-[11px] text-slate-300 mt-1 font-mono">sarah@example.com</div>
+                    <div class="text-[10px] text-slate-400 mt-0.5">Arrival today, concurrent booking testing</div>
+                </button>
+            </form>
+        </div>
+    </div>
+
+    <!-- Manual Email/Password Form -->
+    <div class="max-w-md mx-auto bg-slate-900 border border-slate-800 rounded-xl p-6 shadow-lg">
+        <h3 class="text-sm font-semibold text-white mb-4">Or sign in with email credentials</h3>
+        <form action="{% url 'accounts:login' %}{% if next %}?next={{ next }}{% endif %}" method="post" class="space-y-4">
+            {% csrf_token %}
+            <div>
+                <label class="block text-xs font-semibold uppercase text-slate-300 mb-1">Email Address</label>
+                <input type="email" name="email" required placeholder="admin@grandview.com"
+                       class="w-full bg-slate-950 border border-slate-700 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-amber-500">
+            </div>
+            <div>
+                <label class="block text-xs font-semibold uppercase text-slate-300 mb-1">Password</label>
+                <input type="password" name="password" required placeholder="••••••••"
+                       class="w-full bg-slate-950 border border-slate-700 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-amber-500">
+            </div>
+            <button type="submit" class="w-full bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold py-2.5 rounded-lg text-sm transition">
+                Sign In
+            </button>
+        </form>
+
+        <div class="mt-4 pt-4 border-t border-slate-800 text-center text-xs text-slate-400">
+            Don't have an account? <a href="{% url 'accounts:register' %}" class="text-amber-400 hover:underline">Create a guest account</a>
+        </div>
+    </div>
+</div>
+{% endblock %}

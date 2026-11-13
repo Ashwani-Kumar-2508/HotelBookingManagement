@@ -1,0 +1,275 @@
+{% extends 'base.html' %}
+
+{% block title %}Tracking [{{ booking.reference_code }}] — CoServe Industrial Console{% endblock %}
+
+{% block content %}
+<section class="bg-[#0B0D10] py-12 border-b border-[#1E232B]">
+    <div class="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 space-y-8">
+        
+        <!-- Header & Tracking Reference -->
+        <div class="flex flex-col sm:flex-row sm:items-center justify-between pb-6 border-b border-[#1E232B] gap-4">
+            <div class="space-y-1">
+                <div class="flex items-center gap-3">
+                    <span class="text-xs font-mono px-2 py-0.5 bg-[#1B2028] text-amber-400 border border-[#2E3644]">
+                        ORDER REF: {{ booking.reference_code }}
+                    </span>
+                    <span class="text-xs font-mono uppercase text-neutral-400">
+                        MODE: {{ booking.get_booking_mode_display }}
+                    </span>
+                </div>
+                <h1 class="text-2xl sm:text-3xl font-display font-black text-white uppercase mt-2">
+                    {{ booking.service.title }}
+                </h1>
+            </div>
+
+            <!-- Current Status Badge -->
+            <div class="text-left sm:text-right">
+                <span class="text-[10px] font-mono text-neutral-400 uppercase block">CURRENT DISPATCH STATE</span>
+                <span class="inline-block mt-1 px-3 py-1 text-xs font-mono font-bold uppercase tracking-wider
+                    {% if booking.status == 'COMPLETED' %}bg-emerald-950 text-emerald-400 border border-emerald-800
+                    {% elif booking.status == 'IN_PROGRESS' %}bg-amber-950 text-amber-400 border border-amber-800 animate-pulse
+                    {% else %}bg-[#1A202A] text-neutral-200 border border-[#2E3848]{% endif %}">
+                    ● {{ booking.get_status_display }}
+                </span>
+            </div>
+        </div>
+
+        <!-- Progress State Tracker (Horizontal Timeline) -->
+        <div class="bg-[#12151A] border border-[#222832] p-6">
+            <div class="grid grid-cols-2 sm:grid-cols-4 gap-4 text-xs font-mono">
+                <!-- Step 1: Confirmed -->
+                <div class="p-3 border {% if booking.status != 'PENDING' %}border-emerald-700 bg-emerald-950/20 text-emerald-300{% else %}border-[#242A36] text-neutral-400{% endif %}">
+                    <div class="text-[10px] text-neutral-400 font-bold">STAGE 01</div>
+                    <div class="font-bold uppercase mt-1">DISPATCH CONFIRMED</div>
+                    <div class="text-[10px] text-neutral-400 mt-0.5">Worker Allocated</div>
+                </div>
+
+                <!-- Step 2: En Route -->
+                <div class="p-3 border {% if booking.status in 'WORKER_EN_ROUTE,IN_PROGRESS,COMPLETED' %}border-emerald-700 bg-emerald-950/20 text-emerald-300{% else %}border-[#242A36] text-neutral-400{% endif %}">
+                    <div class="text-[10px] text-neutral-400 font-bold">STAGE 02</div>
+                    <div class="font-bold uppercase mt-1">DISPATCH EN ROUTE</div>
+                    <div class="text-[10px] text-neutral-400 mt-0.5">Technician Deployed</div>
+                </div>
+
+                <!-- Step 3: In Progress (Start OTP) -->
+                <div class="p-3 border {% if booking.status in 'IN_PROGRESS,COMPLETED' %}border-emerald-700 bg-emerald-950/20 text-emerald-300{% else %}border-[#242A36] text-neutral-400{% endif %}">
+                    <div class="text-[10px] text-neutral-400 font-bold">STAGE 03</div>
+                    <div class="font-bold uppercase mt-1">START OTP VERIFIED</div>
+                    <div class="text-[10px] text-neutral-400 mt-0.5">Work Underway</div>
+                </div>
+
+                <!-- Step 4: Completed (Completion OTP) -->
+                <div class="p-3 border {% if booking.status == 'COMPLETED' %}border-emerald-700 bg-emerald-950/20 text-emerald-300{% else %}border-[#242A36] text-neutral-400{% endif %}">
+                    <div class="text-[10px] text-neutral-400 font-bold">STAGE 04</div>
+                    <div class="font-bold uppercase mt-1">COMPLETION OTP</div>
+                    <div class="text-[10px] text-neutral-400 mt-0.5">Ledger Settled</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- TWO-FACTOR OTP HANDSHAKE CONSOLE (Key differentiator) -->
+        <div class="bg-[#12151A] border border-amber-500/50 p-6 space-y-6 tech-border-accent shadow-xl shadow-amber-500/5">
+            <div class="flex items-center justify-between pb-4 border-b border-[#222832]">
+                <div class="space-y-1">
+                    <span class="text-xs font-mono font-bold text-amber-400 uppercase tracking-wider">
+                        [ TWO-FACTOR ON-SITE OTP VERIFICATION CONSOLE ]
+                    </span>
+                    <p class="text-xs text-neutral-400 font-sans">
+                        Anti-fraud security handshake. Share codes with your technician in person upon physical verification.
+                    </p>
+                </div>
+                <i data-lucide="shield-check" class="w-6 h-6 text-amber-500"></i>
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <!-- Start OTP Box -->
+                <div class="p-5 bg-[#0B0D10] border {% if otp.is_start_verified %}border-emerald-800 bg-emerald-950/10{% else %}border-[#222832]{% endif %} space-y-3">
+                    <div class="flex items-center justify-between">
+                        <span class="text-xs font-mono font-bold uppercase text-neutral-300">STAGE 1: START OTP</span>
+                        {% if otp.is_start_verified %}
+                        <span class="text-[10px] font-mono px-2 py-0.5 bg-emerald-950 text-emerald-400 border border-emerald-800">
+                            ✓ VERIFIED AT ARRIVAL
+                        </span>
+                        {% else %}
+                        <span class="text-[10px] font-mono px-2 py-0.5 bg-amber-950 text-amber-400 border border-amber-800">
+                            REQUIRED TO START
+                        </span>
+                        {% endif %}
+                    </div>
+
+                    {% if is_customer or is_admin %}
+                    <div class="text-center py-4 bg-[#14181F] border border-[#252C38]">
+                        <span class="text-[10px] font-mono text-neutral-400 block uppercase">SHARE WITH TECHNICIAN ON ARRIVAL:</span>
+                        <span class="text-4xl font-mono font-black tracking-widest text-white mt-1 block select-all">
+                            {{ otp.start_otp }}
+                        </span>
+                    </div>
+                    {% endif %}
+
+                    {% if is_worker and not otp.is_start_verified %}
+                    <!-- Worker Input to Enter Start OTP -->
+                    <form method="post" action="{% url 'bookings:verify_start_otp' booking.reference_code %}" class="space-y-3 pt-2">
+                        {% csrf_token %}
+                        <label class="block text-[11px] font-mono text-neutral-300 uppercase">Enter Customer's 4-Digit Start OTP:</label>
+                        <div class="flex gap-2">
+                            <input type="text" name="start_otp" maxlength="6" required placeholder="e.g. 4821"
+                                   class="w-full bg-[#161B22] border border-[#2B3442] px-3 py-2 text-center text-lg font-mono tracking-widest text-white focus:outline-none focus:border-amber-500">
+                            <button type="submit" class="px-4 py-2 bg-emerald-500 hover:bg-emerald-400 text-black text-xs font-mono font-bold uppercase">
+                                VERIFY
+                            </button>
+                        </div>
+                    </form>
+                    {% endif %}
+
+                    <p class="text-[11px] text-neutral-400 font-sans leading-relaxed">
+                        Verifies the assigned worker has arrived at your premises in appropriate PPE with required tools.
+                    </p>
+                </div>
+
+                <!-- Completion OTP Box -->
+                <div class="p-5 bg-[#0B0D10] border {% if otp.is_completion_verified %}border-emerald-800 bg-emerald-950/10{% else %}border-[#222832]{% endif %} space-y-3">
+                    <div class="flex items-center justify-between">
+                        <span class="text-xs font-mono font-bold uppercase text-neutral-300">STAGE 2: COMPLETION OTP</span>
+                        {% if otp.is_completion_verified %}
+                        <span class="text-[10px] font-mono px-2 py-0.5 bg-emerald-950 text-emerald-400 border border-emerald-800">
+                            ✓ VERIFIED & SETTLED
+                        </span>
+                        {% else %}
+                        <span class="text-[10px] font-mono px-2 py-0.5 bg-[#1E2430] text-neutral-400 border border-[#2F3746]">
+                            CONFIRM AFTER SATISFACTION
+                        </span>
+                        {% endif %}
+                    </div>
+
+                    {% if is_customer or is_admin %}
+                    <div class="text-center py-4 bg-[#14181F] border border-[#252C38]">
+                        <span class="text-[10px] font-mono text-neutral-400 block uppercase">SHARE ONLY WHEN WORK IS COMPLETE:</span>
+                        <span class="text-4xl font-mono font-black tracking-widest text-amber-400 mt-1 block select-all">
+                            {{ otp.completion_otp }}
+                        </span>
+                    </div>
+                    {% endif %}
+
+                    {% if is_worker and otp.is_start_verified and not otp.is_completion_verified %}
+                    <!-- Worker Input to Enter Completion OTP -->
+                    <form method="post" action="{% url 'bookings:verify_completion_otp' booking.reference_code %}" class="space-y-3 pt-2">
+                        {% csrf_token %}
+                        <label class="block text-[11px] font-mono text-neutral-300 uppercase">Enter Customer's Completion OTP:</label>
+                        <div class="flex gap-2">
+                            <input type="text" name="completion_otp" maxlength="6" required placeholder="e.g. 9042"
+                                   class="w-full bg-[#161B22] border border-[#2B3442] px-3 py-2 text-center text-lg font-mono tracking-widest text-white focus:outline-none focus:border-amber-500">
+                            <button type="submit" class="px-4 py-2 bg-amber-500 hover:bg-amber-400 text-black text-xs font-mono font-bold uppercase">
+                                FINISH
+                            </button>
+                        </div>
+                    </form>
+                    {% endif %}
+
+                    <p class="text-[11px] text-neutral-400 font-sans leading-relaxed">
+                        Releases the digital escrow or confirms satisfactory completion for on-site cash payment.
+                    </p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Two Column Breakdown: Deployment Details & Financial Ledger -->
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+            <!-- Left: Deployment Details -->
+            <div class="bg-[#12151A] border border-[#222832] p-6 space-y-4">
+                <h3 class="text-xs font-mono uppercase tracking-widest text-amber-500 font-bold">
+                    [ DEPLOYMENT & PERSONNEL SPECS ]
+                </h3>
+
+                <div class="space-y-3 text-xs font-mono">
+                    <div class="flex justify-between pb-2 border-b border-[#1E232B]">
+                        <span class="text-neutral-400">SCHEDULE:</span>
+                        <span class="text-white font-bold">{{ booking.scheduled_date }} ({{ booking.time_slot }})</span>
+                    </div>
+                    <div class="flex justify-between pb-2 border-b border-[#1E232B]">
+                        <span class="text-neutral-400">ASSIGNED GUILD:</span>
+                        <span class="text-amber-400 font-bold">{{ booking.cooperative.name|default:"Direct Certified Roster" }}</span>
+                    </div>
+                    <div class="flex justify-between pb-2 border-b border-[#1E232B]">
+                        <span class="text-neutral-400">LEAD TECHNICIAN:</span>
+                        <span class="text-white font-bold">
+                            {% if booking.worker %}
+                                {{ booking.worker.user.get_full_name }} (★ {{ booking.worker.rating_avg }})
+                            {% else %}
+                                <span class="text-amber-500">Auto-matching nearest worker...</span>
+                            {% endif %}
+                        </span>
+                    </div>
+                    <div class="flex justify-between pb-2 border-b border-[#1E232B]">
+                        <span class="text-neutral-400">CUSTOMER:</span>
+                        <span class="text-neutral-200">{{ booking.customer.user.get_full_name }} ({{ booking.customer.user.phone_number }})</span>
+                    </div>
+                    <div class="space-y-1 pt-1">
+                        <span class="text-neutral-400 block">SERVICE ADDRESS:</span>
+                        <div class="p-2.5 bg-[#0B0D10] border border-[#1E232B] text-neutral-300">
+                            {{ booking.service_address }}, {{ booking.locality }}, Pincode: {{ booking.pincode }}
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Right: Payment & Split Ledger -->
+            <div class="bg-[#12151A] border border-[#222832] p-6 space-y-4 flex flex-col justify-between">
+                <div class="space-y-4">
+                    <div class="flex items-center justify-between pb-2 border-b border-[#1E232B]">
+                        <h3 class="text-xs font-mono uppercase tracking-widest text-amber-500 font-bold">
+                            [ PAYMENT ASSURANCE & SPLIT ]
+                        </h3>
+                        <span class="text-[10px] font-mono px-2 py-0.5 bg-[#181D24] text-neutral-300 border border-[#262E3B]">
+                            {{ booking.get_payment_preference_display }}
+                        </span>
+                    </div>
+
+                    <div class="space-y-2 text-xs font-mono">
+                        <div class="flex justify-between text-neutral-300">
+                            <span>Base Service Tariff:</span>
+                            <span class="text-white font-bold">₹{{ booking.base_amount }}</span>
+                        </div>
+                        <div class="flex justify-between text-neutral-400">
+                            <span>→ Worker Net Compensation (92%):</span>
+                            <span class="text-emerald-400 font-bold">₹{{ booking.worker_earning }}</span>
+                        </div>
+                        <div class="flex justify-between text-neutral-400">
+                            <span>→ Coop Emergency Welfare Fund (3%):</span>
+                            <span class="text-amber-400">₹{{ booking.coop_welfare_fee }}</span>
+                        </div>
+                        <div class="flex justify-between text-neutral-400">
+                            <span>→ Platform Technology Infrastructure (5%):</span>
+                            <span class="text-neutral-300">₹{{ booking.platform_fee }}</span>
+                        </div>
+                        <div class="pt-3 border-t border-[#1E232B] flex justify-between text-sm font-bold text-white">
+                            <span>Total Billed Amount:</span>
+                            <span class="text-2xl text-amber-400 font-display">₹{{ booking.total_amount }}</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Cash Receipt Confirmation (If Pay on Completion) -->
+                {% if booking.payment_preference == 'PAY_ON_COMPLETION' and booking.status == 'COMPLETED' and booking.payment_status != 'PAID_ON_SITE' %}
+                <div class="p-4 bg-[#14181F] border border-amber-500/40 space-y-3">
+                    <div class="text-xs font-mono text-amber-300 font-bold">
+                        ON-SITE CASH / UPI PENDING ACKNOWLEDGEMENT
+                    </div>
+                    {% if is_worker or is_admin %}
+                    <form method="post" action="{% url 'bookings:confirm_cash' booking.reference_code %}">
+                        {% csrf_token %}
+                        <button type="submit" class="w-full py-2.5 bg-emerald-500 hover:bg-emerald-400 text-black text-xs font-mono font-bold uppercase tracking-wider">
+                            CONFIRM CASH / DIRECT UPI RECEIVED (₹{{ booking.total_amount }})
+                        </button>
+                    </form>
+                    {% else %}
+                    <p class="text-[11px] text-neutral-400 font-sans">
+                        Please pay ₹{{ booking.total_amount }} directly to {{ booking.worker.user.get_full_name }} via Cash or UPI. Worker will confirm receipt.
+                    </p>
+                    {% endif %}
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</section>
+{% endblock %}

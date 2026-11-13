@@ -1,0 +1,128 @@
+{% extends "base.html" %}
+
+{% block title %}{{ room_type.name }} | GrandView Hotel & Resort{% endblock %}
+
+{% block content %}
+<div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+    <!-- Breadcrumb -->
+    <div class="mb-4 text-xs font-mono text-slate-400 flex items-center space-x-2">
+        <a href="{% url 'core:home' %}" class="hover:text-white">Home</a>
+        <span>&rsaquo;</span>
+        <a href="{% url 'bookings:search' %}" class="hover:text-white">Suites</a>
+        <span>&rsaquo;</span>
+        <span class="text-amber-400">{{ room_type.name }}</span>
+    </div>
+
+    <!-- Hero Gallery & Suite Overview -->
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+        <!-- Main Image & Description -->
+        <div class="lg:col-span-2 space-y-6">
+            <div class="relative h-96 rounded-2xl overflow-hidden border border-slate-800 shadow-2xl">
+                <img src="{{ room_type.image_url }}" alt="{{ room_type.name }}" class="w-full h-full object-cover">
+                <div class="absolute bottom-4 left-4 bg-slate-950/80 backdrop-blur-md px-4 py-2 rounded-xl border border-slate-700/60">
+                    <span class="text-lg font-serif font-bold text-white">{{ room_type.name }}</span>
+                    <span class="block text-xs text-amber-400 font-mono">{{ room_type.bed_type }} &bull; {{ room_type.size_sqft }} sq ft</span>
+                </div>
+            </div>
+
+            <!-- Suite Narrative -->
+            <div class="bg-slate-900 border border-slate-800 rounded-2xl p-6">
+                <h2 class="text-lg font-serif font-bold text-white mb-2">Suite Experience & Highlights</h2>
+                <p class="text-sm text-slate-300 leading-relaxed">{{ room_type.description }}</p>
+
+                <!-- Key Attributes -->
+                <div class="grid grid-cols-3 gap-4 mt-6 pt-6 border-t border-slate-800 text-center">
+                    <div class="bg-slate-950 p-3 rounded-xl border border-slate-800/80">
+                        <div class="text-[10px] uppercase tracking-wider text-slate-400 font-mono">Maximum Capacity</div>
+                        <div class="text-base font-bold text-white mt-1">{{ room_type.max_guests }} Guests</div>
+                    </div>
+                    <div class="bg-slate-950 p-3 rounded-xl border border-slate-800/80">
+                        <div class="text-[10px] uppercase tracking-wider text-slate-400 font-mono">Bed Configuration</div>
+                        <div class="text-base font-bold text-white mt-1">{{ room_type.bed_type }}</div>
+                    </div>
+                    <div class="bg-slate-950 p-3 rounded-xl border border-slate-800/80">
+                        <div class="text-[10px] uppercase tracking-wider text-slate-400 font-mono">Suite Floor Space</div>
+                        <div class="text-base font-bold text-white mt-1">{{ room_type.size_sqft }} sq ft</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Curated Amenities -->
+            <div class="bg-slate-900 border border-slate-800 rounded-2xl p-6">
+                <h3 class="text-base font-serif font-bold text-white mb-4">Included Suite Amenities</h3>
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    {% for a in room_type.amenities.all %}
+                    <div class="flex items-center space-x-3 p-3 rounded-xl bg-slate-950 border border-slate-800/80">
+                        <div class="w-8 h-8 rounded-lg bg-amber-500/10 border border-amber-500/20 flex items-center justify-center text-amber-400">
+                            <i data-lucide="{{ a.icon }}" class="w-4 h-4"></i>
+                        </div>
+                        <div>
+                            <div class="text-xs font-semibold text-white">{{ a.name }}</div>
+                            <div class="text-[10px] text-slate-400">{{ a.description|default:"Curated hospitality amenity." }}</div>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+
+        <!-- Sticky Reservation Widget -->
+        <div class="space-y-6">
+            <div class="bg-slate-900 border-2 border-amber-500/30 rounded-2xl p-6 shadow-2xl sticky top-20">
+                <div class="flex items-baseline justify-between border-b border-slate-800 pb-4 mb-4">
+                    <div>
+                        <span class="text-xs text-slate-400 uppercase font-mono">Nightly Rate</span>
+                        <div class="text-3xl font-serif font-bold text-amber-400">${{ room_type.base_price }}</div>
+                    </div>
+                    <span class="text-xs text-slate-400 font-mono">Weekend: ${{ room_type.weekend_price }}</span>
+                </div>
+
+                <form action="{% url 'bookings:search' %}" method="get" class="space-y-4">
+                    <input type="hidden" name="room_type" value="{{ room_type.id }}">
+                    <div>
+                        <label class="block text-xs font-semibold uppercase text-slate-300 mb-1">Check-In</label>
+                        <input type="date" name="check_in" value="{{ default_check_in }}" min="{{ today }}" required
+                               class="w-full bg-slate-950 border border-slate-700 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-amber-500">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-semibold uppercase text-slate-300 mb-1">Check-Out</label>
+                        <input type="date" name="check_out" value="{{ default_check_out }}" min="{{ today }}" required
+                               class="w-full bg-slate-950 border border-slate-700 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-amber-500">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-semibold uppercase text-slate-300 mb-1">Guests</label>
+                        <select name="guests" class="w-full bg-slate-950 border border-slate-700 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-amber-500">
+                            {% for i in "1234"|make_list %}
+                            {% if forloop.counter <= room_type.max_guests %}
+                            <option value="{{ forloop.counter }}" {% if forloop.counter == 2 %}selected{% endif %}>
+                                {{ forloop.counter }} Guest{{ forloop.counter|pluralize }}
+                            </option>
+                            {% endif %}
+                            {% endfor %}
+                        </select>
+                    </div>
+
+                    <button type="submit" class="w-full bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold py-3 rounded-lg text-xs uppercase tracking-wider transition shadow-lg shadow-amber-500/20">
+                        Check Availability for this Suite &rarr;
+                    </button>
+                </form>
+
+                <div class="mt-4 pt-4 border-t border-slate-800 text-[11px] text-slate-400 space-y-1 font-mono">
+                    <div class="flex items-center space-x-1 text-emerald-400">
+                        <i data-lucide="check" class="w-3.5 h-3.5"></i>
+                        <span>Guaranteed instant 15-minute hold</span>
+                    </div>
+                    <div class="flex items-center space-x-1 text-slate-400">
+                        <i data-lucide="credit-card" class="w-3.5 h-3.5"></i>
+                        <span>Simulated test sandbox payment</span>
+                    </div>
+                    <div class="flex items-center space-x-1 text-slate-400">
+                        <i data-lucide="shield" class="w-3.5 h-3.5"></i>
+                        <span>Free cancellation up to 24h prior</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

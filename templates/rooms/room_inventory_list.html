@@ -1,0 +1,129 @@
+{% extends "base.html" %}
+
+{% block title %}Physical Room Inventory | GrandView Hotel & Resort{% endblock %}
+
+{% block content %}
+<div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+
+    <div class="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-8">
+        <div>
+            <div class="flex items-center space-x-2">
+                <span class="px-2.5 py-0.5 rounded text-[10px] font-mono font-bold bg-blue-500/20 text-blue-300 border border-blue-500/30 uppercase">
+                    Inventory Operations
+                </span>
+                <span class="text-xs text-slate-400 font-mono">Real-Time Room Status</span>
+            </div>
+            <h1 class="text-2xl sm:text-3xl font-serif font-bold text-white mt-1">Physical Rooms Inventory</h1>
+            <p class="text-xs text-slate-400 mt-1">Review room statuses, manage housekeeping cycles, and monitor maintenance holds.</p>
+        </div>
+
+        <div class="flex items-center space-x-3">
+            <a href="{% url 'reports:housekeeping' %}" class="px-3.5 py-2 bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-semibold rounded-lg border border-slate-700 transition">
+                Housekeeping Board
+            </a>
+            {% if user.is_hotel_admin %}
+            <a href="{% url 'rooms:room_create' %}" class="px-4 py-2 bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold text-xs rounded-lg shadow transition flex items-center space-x-1.5">
+                <i data-lucide="plus" class="w-4 h-4"></i>
+                <span>Add Physical Room</span>
+            </a>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- Filter Bar -->
+    <div class="bg-slate-900 border border-slate-800 rounded-2xl p-4 mb-6 shadow-xl flex flex-wrap items-center justify-between gap-4">
+        <form action="" method="get" class="flex flex-wrap items-center gap-3 text-xs">
+            <!-- Floor filter -->
+            <div class="flex items-center space-x-2">
+                <span class="text-slate-400 font-mono">Floor:</span>
+                <select name="floor" onchange="this.form.submit()" class="bg-slate-950 border border-slate-700 rounded-lg px-2.5 py-1.5 text-white">
+                    <option value="">All Floors</option>
+                    {% for f in floors %}
+                    <option value="{{ f }}" {% if selected_floor == f|stringformat:"i" %}selected{% endif %}>Floor {{ f }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+
+            <!-- Status filter -->
+            <div class="flex items-center space-x-2">
+                <span class="text-slate-400 font-mono">Status:</span>
+                <select name="status" onchange="this.form.submit()" class="bg-slate-950 border border-slate-700 rounded-lg px-2.5 py-1.5 text-white">
+                    <option value="">All Statuses</option>
+                    {% for st_code, st_label in statuses %}
+                    <option value="{{ st_code }}" {% if selected_status == st_code %}selected{% endif %}>{{ st_label }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+
+            {% if selected_floor or selected_status %}
+            <a href="{% url 'rooms:room_inventory' %}" class="text-amber-400 hover:underline">Reset Filters</a>
+            {% endif %}
+        </form>
+
+        <span class="text-xs font-mono text-slate-400">Total Rooms: <strong class="text-white">{{ rooms.count }}</strong></span>
+    </div>
+
+    <!-- Rooms Table -->
+    <div class="bg-slate-900 border border-slate-800 rounded-2xl overflow-hidden shadow-2xl">
+        <table class="w-full text-left text-xs">
+            <thead class="bg-slate-950 text-slate-400 uppercase font-mono border-b border-slate-800">
+                <tr>
+                    <th class="p-3.5">Room Number</th>
+                    <th class="p-3.5">Category / Suite</th>
+                    <th class="p-3.5">Floor</th>
+                    <th class="p-3.5">Current Status</th>
+                    <th class="p-3.5">Housekeeping / Maintenance Notes</th>
+                    <th class="p-3.5 text-right">Update Status</th>
+                </tr>
+            </thead>
+            <tbody class="divide-y divide-slate-800">
+                {% for room in rooms %}
+                <tr class="hover:bg-slate-800/40 transition">
+                    <td class="p-3.5 font-bold font-mono text-amber-400 text-sm">
+                        Room {{ room.room_number }}
+                    </td>
+                    <td class="p-3.5 font-serif font-bold text-white">
+                        {{ room.room_type.name }}
+                        <span class="block text-[11px] font-sans font-normal text-slate-400">${{ room.room_type.base_price }}/night</span>
+                    </td>
+                    <td class="p-3.5 font-mono text-slate-300">
+                        Floor {{ room.floor }}
+                    </td>
+                    <td class="p-3.5 font-mono">
+                        <span class="inline-block px-2.5 py-1 rounded text-[10px] font-bold
+                            {% if room.status == 'AVAILABLE' %}bg-emerald-500/20 text-emerald-400 border border-emerald-500/30
+                            {% elif room.status == 'OCCUPIED' %}bg-blue-500/20 text-blue-400 border border-blue-500/30
+                            {% elif room.status == 'DIRTY' %}bg-amber-500/20 text-amber-400 border border-amber-500/30
+                            {% elif room.status == 'MAINTENANCE' %}bg-rose-500/20 text-rose-400 border border-rose-500/30{% endif %}">
+                            {{ room.get_status_display }}
+                        </span>
+                    </td>
+                    <td class="p-3.5 text-slate-400 font-mono text-[11px] max-w-xs truncate" title="{{ room.housekeeping_notes }}">
+                        {{ room.housekeeping_notes|default:"--" }}
+                    </td>
+                    <td class="p-3.5 text-right">
+                        <!-- Quick status update dropdown -->
+                        <form action="{% url 'rooms:update_room_status' room.id %}" method="post" class="inline-flex items-center space-x-1.5">
+                            {% csrf_token %}
+                            <select name="status" class="bg-slate-950 border border-slate-700 rounded text-[11px] px-2 py-1 text-white">
+                                {% for st_code, st_label in statuses %}
+                                <option value="{{ st_code }}" {% if room.status == st_code %}selected{% endif %}>
+                                    {{ st_label }}
+                                </option>
+                                {% endfor %}
+                            </select>
+                            <button type="submit" class="px-2.5 py-1 bg-slate-800 hover:bg-slate-700 text-amber-400 rounded text-[11px] font-bold border border-slate-700 transition">
+                                Apply
+                            </button>
+                        </form>
+                    </td>
+                </tr>
+                {% empty %}
+                <tr><td colspan="6" class="p-8 text-center text-slate-400">No rooms match filter criteria.</td></tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+
+</div>
+{% endblock %}

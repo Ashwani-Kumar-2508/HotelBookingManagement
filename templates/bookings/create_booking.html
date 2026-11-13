@@ -1,0 +1,246 @@
+{% extends 'base.html' %}
+
+{% block title %}Dispatch Booking Setup — CoServe{% endblock %}
+
+{% block content %}
+<section class="bg-[#0B0D10] py-12 border-b border-[#1E232B]" x-data="{ 
+    mode: '{% if selected_worker %}DIRECT{% else %}COOPERATIVE{% endif %}',
+    paymentPref: 'ONLINE_APP',
+    basePrice: {{ service.base_price }},
+    get platformFee() { return (this.basePrice * 0.05).toFixed(2); },
+    get coopFee() { return (this.basePrice * 0.03).toFixed(2); },
+    get workerEarning() { return (this.basePrice - this.platformFee - this.coopFee).toFixed(2); }
+}">
+    <div class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 space-y-8">
+        
+        <!-- Header -->
+        <div class="space-y-2">
+            <span class="text-xs font-mono uppercase tracking-widest text-amber-500 font-semibold">[ DISPATCH ORDER SETUP // REF: CS-REQ ]</span>
+            <h1 class="text-3xl font-display font-black text-white uppercase">CONFIGURE SERVICE DISPATCH</h1>
+            <p class="text-sm text-neutral-400 font-sans">
+                Review technical service scope, specify deployment location, choose allocation mode, and configure payment assurance.
+            </p>
+        </div>
+
+        <form method="post" class="space-y-8">
+            {% csrf_token %}
+
+            <!-- Service Summary Box -->
+            <div class="bg-[#12151A] border border-[#222832] p-6 space-y-4">
+                <div class="flex items-center justify-between pb-4 border-b border-[#1F2530]">
+                    <div>
+                        <span class="text-[10px] font-mono px-2 py-0.5 bg-[#1B2028] text-amber-400 border border-[#2C3442]">
+                            {{ service.category.code }}
+                        </span>
+                        <h3 class="text-xl font-display font-bold text-white uppercase mt-2">{{ service.title }}</h3>
+                    </div>
+                    <div class="text-right">
+                        <span class="text-[10px] font-mono text-neutral-400 uppercase block">FIXED RATE</span>
+                        <span class="text-2xl font-display font-black text-white">₹{{ service.base_price }}</span>
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-1 sm:grid-cols-3 gap-4 text-xs font-mono text-neutral-300">
+                    <div><span class="text-neutral-400">DURATION:</span> {{ service.estimated_duration_minutes }} Mins</div>
+                    <div><span class="text-neutral-400">CATEGORY:</span> {{ service.category.name }}</div>
+                    <div><span class="text-neutral-400">SECURITY:</span> Two-Factor OTP Required</div>
+                </div>
+            </div>
+
+            <!-- STEP 1: Select Booking Mode (Direct Worker vs Cooperative Allocation) -->
+            <div class="bg-[#12151A] border border-[#222832] p-6 space-y-4">
+                <h3 class="text-xs font-mono uppercase tracking-widest text-amber-500 font-bold">
+                    [ 01 // SELECT ALLOCATION MODE ]
+                </h3>
+
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <!-- Mode B: Cooperative Pool Dispatch (Recommended) -->
+                    <label class="p-4 border cursor-pointer transition-all flex flex-col justify-between"
+                           :class="mode === 'COOPERATIVE' ? 'border-amber-500 bg-[#171C24] tech-border-accent' : 'border-[#222832] bg-[#0E1116] hover:border-[#303846]'">
+                        <div class="space-y-2">
+                            <div class="flex items-center justify-between">
+                                <span class="font-display font-bold text-white uppercase text-sm">Mode B: Cooperative Guild Dispatch</span>
+                                <input type="radio" name="booking_mode" value="COOPERATIVE" x-model="mode" class="accent-amber-500">
+                            </div>
+                            <p class="text-[11px] text-neutral-400 font-sans leading-relaxed">
+                                The cooperative dispatcher automatically assigns the nearest certified guild master with the lowest active workload to guarantee rapid response.
+                            </p>
+                        </div>
+                        <div class="mt-4 pt-3 border-t border-[#1C222C] text-[10px] font-mono text-emerald-400">
+                            ★ RECOMMENDED FOR FASTEST DEPLOYMENT
+                        </div>
+                    </label>
+
+                    <!-- Mode A: Direct Worker Selection -->
+                    <label class="p-4 border cursor-pointer transition-all flex flex-col justify-between"
+                           :class="mode === 'DIRECT' ? 'border-amber-500 bg-[#171C24] tech-border-accent' : 'border-[#222832] bg-[#0E1116] hover:border-[#303846]'">
+                        <div class="space-y-2">
+                            <div class="flex items-center justify-between">
+                                <span class="font-display font-bold text-white uppercase text-sm">Mode A: Direct Master Selection</span>
+                                <input type="radio" name="booking_mode" value="DIRECT" x-model="mode" class="accent-amber-500">
+                            </div>
+                            <p class="text-[11px] text-neutral-400 font-sans leading-relaxed">
+                                Manually select an individual certified technician from the roster based on their specific profile, experience, and past reviews.
+                            </p>
+                        </div>
+                        <div class="mt-4 pt-3 border-t border-[#1C222C] text-[10px] font-mono text-neutral-400">
+                            INDIVIDUAL SELECTION
+                        </div>
+                    </label>
+                </div>
+
+                <!-- Conditional Target Dropdowns -->
+                <div x-show="mode === 'COOPERATIVE'" class="pt-4 space-y-2">
+                    <label class="block text-xs font-mono uppercase text-neutral-300">Assign to Cooperative Guild:</label>
+                    <select name="selected_coop_id" class="w-full bg-[#0B0D10] border border-[#28303C] px-4 py-2.5 text-xs font-mono text-white focus:outline-none focus:border-amber-500">
+                        {% for coop in available_cooperatives %}
+                        <option value="{{ coop.id }}" {% if selected_coop.id == coop.id %}selected{% endif %}>
+                            {{ coop.name }} ({{ coop.locality }} - {{ coop.service_radius_km }}km radius)
+                        </option>
+                        {% endfor %}
+                    </select>
+                </div>
+
+                <div x-show="mode === 'DIRECT'" class="pt-4 space-y-2">
+                    <label class="block text-xs font-mono uppercase text-neutral-300">Select Certified Specialist:</label>
+                    <select name="selected_worker_id" class="w-full bg-[#0B0D10] border border-[#28303C] px-4 py-2.5 text-xs font-mono text-white focus:outline-none focus:border-amber-500">
+                        {% for worker in available_workers %}
+                        <option value="{{ worker.id }}" {% if selected_worker.id == worker.id %}selected{% endif %}>
+                            {{ worker.user.get_full_name }} — ★ {{ worker.rating_avg }} ({{ worker.total_jobs_completed }} jobs, {{ worker.locality }})
+                        </option>
+                        {% endfor %}
+                    </select>
+                </div>
+            </div>
+
+            <!-- STEP 2: Deployment Schedule & Address -->
+            <div class="bg-[#12151A] border border-[#222832] p-6 space-y-4">
+                <h3 class="text-xs font-mono uppercase tracking-widest text-amber-500 font-bold">
+                    [ 02 // SCHEDULE & DEPLOYMENT LOCATION ]
+                </h3>
+
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-xs font-mono uppercase text-neutral-300 mb-2">Required Date:</label>
+                        <input type="date" name="scheduled_date" required class="w-full bg-[#0B0D10] border border-[#28303C] px-4 py-2 text-xs font-mono text-white focus:outline-none focus:border-amber-500">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-mono uppercase text-neutral-300 mb-2">Time Slot Window:</label>
+                        <select name="time_slot" class="w-full bg-[#0B0D10] border border-[#28303C] px-4 py-2 text-xs font-mono text-white focus:outline-none focus:border-amber-500">
+                            <option value="09:00 - 11:00 AM">09:00 - 11:00 AM (Morning Shift)</option>
+                            <option value="11:30 - 01:30 PM">11:30 - 01:30 PM (Mid-Day Shift)</option>
+                            <option value="02:30 - 04:30 PM">02:30 - 04:30 PM (Afternoon Shift)</option>
+                            <option value="05:00 - 07:00 PM">05:00 - 07:00 PM (Evening Shift)</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="space-y-2">
+                    <label class="block text-xs font-mono uppercase text-neutral-300">Service Address & Landmark:</label>
+                    <textarea name="service_address" rows="2" required placeholder="Flat/Unit number, Building name, Street, Landmark..."
+                              class="w-full bg-[#0B0D10] border border-[#28303C] px-4 py-2 text-xs font-mono text-white focus:outline-none focus:border-amber-500">{{ customer_profile.address }}</textarea>
+                </div>
+
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-xs font-mono uppercase text-neutral-300 mb-1">Locality / Sector:</label>
+                        <input type="text" name="locality" value="{{ customer_profile.locality|default:'Central Metro' }}" required class="w-full bg-[#0B0D10] border border-[#28303C] px-4 py-2 text-xs font-mono text-white focus:outline-none focus:border-amber-500">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-mono uppercase text-neutral-300 mb-1">Pincode:</label>
+                        <input type="text" name="pincode" value="{{ customer_profile.pincode|default:'400001' }}" required class="w-full bg-[#0B0D10] border border-[#28303C] px-4 py-2 text-xs font-mono text-white focus:outline-none focus:border-amber-500">
+                    </div>
+                </div>
+
+                <div class="space-y-2">
+                    <label class="block text-xs font-mono uppercase text-neutral-300">Technical Instructions / Notes (Optional):</label>
+                    <input type="text" name="special_notes" placeholder="e.g. Bring extra 32A MCB, main valve is located behind the building..."
+                           class="w-full bg-[#0B0D10] border border-[#28303C] px-4 py-2 text-xs font-mono text-white focus:outline-none focus:border-amber-500">
+                </div>
+            </div>
+
+            <!-- STEP 3: Dual Payment Preference Configuration -->
+            <div class="bg-[#12151A] border border-[#222832] p-6 space-y-4">
+                <h3 class="text-xs font-mono uppercase tracking-widest text-amber-500 font-bold">
+                    [ 03 // DUAL PAYMENT ASSURANCE ]
+                </h3>
+
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <!-- Option 1: In-App Escrow Payment -->
+                    <label class="p-4 border cursor-pointer transition-all flex flex-col justify-between"
+                           :class="paymentPref === 'ONLINE_APP' ? 'border-amber-500 bg-[#171C24] tech-border-accent' : 'border-[#222832] bg-[#0E1116]'">
+                        <div class="space-y-2">
+                            <div class="flex items-center justify-between">
+                                <span class="font-display font-bold text-white uppercase text-sm">Pay In-App (Digital Escrow)</span>
+                                <input type="radio" name="payment_preference" value="ONLINE_APP" x-model="paymentPref" class="accent-amber-500">
+                            </div>
+                            <p class="text-[11px] text-neutral-400 font-sans leading-relaxed">
+                                Authorize payment securely online (Razorpay/Card/UPI). Funds remain in protected escrow and are captured ONLY after you share the Completion OTP.
+                            </p>
+                        </div>
+                        <div class="mt-4 pt-3 border-t border-[#1C222C] text-[10px] font-mono text-emerald-400">
+                            SECURE DIGITAL ESCROW
+                        </div>
+                    </label>
+
+                    <!-- Option 2: Pay on Completion -->
+                    <label class="p-4 border cursor-pointer transition-all flex flex-col justify-between"
+                           :class="paymentPref === 'PAY_ON_COMPLETION' ? 'border-amber-500 bg-[#171C24] tech-border-accent' : 'border-[#222832] bg-[#0E1116]'">
+                        <div class="space-y-2">
+                            <div class="flex items-center justify-between">
+                                <span class="font-display font-bold text-white uppercase text-sm">Pay on Completion (On-Site)</span>
+                                <input type="radio" name="payment_preference" value="PAY_ON_COMPLETION" x-model="paymentPref" class="accent-amber-500">
+                            </div>
+                            <p class="text-[11px] text-neutral-400 font-sans leading-relaxed">
+                                Zero upfront payment. Inspect the service in person, verify completion via OTP, then pay directly to the certified worker via Cash or direct UPI.
+                            </p>
+                        </div>
+                        <div class="mt-4 pt-3 border-t border-[#1C222C] text-[10px] font-mono text-neutral-300">
+                            CASH / DIRECT UPI ON SITE
+                        </div>
+                    </label>
+                </div>
+            </div>
+
+            <!-- Transparent Financial Ledger Split (The CoServe Differentiator) -->
+            <div class="bg-[#0B0D10] border border-[#222832] p-6 space-y-4">
+                <div class="flex items-center justify-between pb-3 border-b border-[#1E232B]">
+                    <span class="text-xs font-mono font-bold uppercase tracking-wider text-amber-500">
+                        [ TRANSPARENT SPLIT LEDGER RECORD ]
+                    </span>
+                    <span class="text-[11px] font-mono text-neutral-400">ZERO HIDDEN MARKUPS</span>
+                </div>
+
+                <div class="space-y-2 text-xs font-mono">
+                    <div class="flex justify-between text-neutral-300">
+                        <span>Certified Master Trade Payout (92.0%):</span>
+                        <span class="text-emerald-400 font-bold" x-text="'₹' + workerEarning">₹{{ service.base_price }}</span>
+                    </div>
+                    <div class="flex justify-between text-neutral-400">
+                        <span>Cooperative Welfare Reserve Pool (3.0%):</span>
+                        <span class="text-amber-400" x-text="'₹' + coopFee">₹0.00</span>
+                    </div>
+                    <div class="flex justify-between text-neutral-400">
+                        <span>CoServe Platform Engine Fee (5.0%):</span>
+                        <span class="text-neutral-300" x-text="'₹' + platformFee">₹0.00</span>
+                    </div>
+                    <div class="pt-3 border-t border-[#1E232B] flex justify-between text-sm font-bold text-white">
+                        <span>Total Customer Amount:</span>
+                        <span class="text-xl text-amber-400">₹{{ service.base_price }}</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Submit Action -->
+            <div class="flex items-center justify-between pt-4">
+                <a href="{% url 'services:catalog' %}" class="text-xs font-mono text-neutral-400 hover:text-white uppercase">
+                    ← Back to Catalog
+                </a>
+                <button type="submit" class="px-8 py-4 bg-amber-500 hover:bg-amber-400 text-black font-mono font-bold text-xs uppercase tracking-widest shadow-xl shadow-amber-500/20">
+                    CONFIRM & GENERATE SECURE DISPATCH →
+                </button>
+            </div>
+        </form>
+    </div>
+</section>
+{% endblock %}

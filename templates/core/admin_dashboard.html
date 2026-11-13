@@ -1,0 +1,119 @@
+{% extends 'base.html' %}
+
+{% block title %}Platform Director Console — CoServe{% endblock %}
+
+{% block content %}
+<section class="bg-[#0B0D10] py-12 border-b border-[#1E232B]">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-8">
+        
+        <!-- Header -->
+        <div class="bg-[#12151A] border border-[#222832] p-6 tech-border-accent">
+            <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                <div class="space-y-1">
+                    <span class="text-[10px] font-mono px-2 py-0.5 bg-purple-950 text-purple-400 border border-purple-800">
+                        PLATFORM ADMINISTRATION & GOVERNANCE
+                    </span>
+                    <h1 class="text-2xl sm:text-3xl font-display font-black text-white uppercase mt-1">
+                        CENTRAL SYSTEM DIRECTORY
+                    </h1>
+                    <p class="text-xs font-mono text-neutral-400">
+                        SUPERUSER CONSOLE • PLATFORM COMMISSION RATE: 5.0% • COOP WELFARE: 3.0%
+                    </p>
+                </div>
+
+                <div class="grid grid-cols-2 gap-4 text-xs font-mono">
+                    <div class="p-3 bg-[#0B0D10] border border-[#1E232B]">
+                        <span class="text-[10px] text-neutral-400 block uppercase">TOTAL BOOKINGS</span>
+                        <span class="text-xl font-bold text-white">{{ total_bookings }}</span>
+                    </div>
+                    <div class="p-3 bg-[#0B0D10] border border-[#1E232B]">
+                        <span class="text-[10px] text-neutral-400 block uppercase">ACTIVE DISPATCHES</span>
+                        <span class="text-xl font-bold text-amber-400">{{ active_bookings }}</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Recent Dispatches -->
+        <div class="space-y-4">
+            <h3 class="text-xs font-mono uppercase tracking-widest text-amber-500 font-bold">
+                [ SYSTEM AUDIT: RECENT BOOKINGS & DISPATCH LOG ]
+            </h3>
+
+            <div class="bg-[#12151A] border border-[#222832] overflow-x-auto">
+                <table class="w-full text-left text-xs font-mono">
+                    <thead class="bg-[#0E1116] border-b border-[#222832] text-neutral-400 uppercase">
+                        <tr>
+                            <th class="p-4">Ref Code</th>
+                            <th class="p-4">Service</th>
+                            <th class="p-4">Customer</th>
+                            <th class="p-4">Technician</th>
+                            <th class="p-4">Mode & Payment</th>
+                            <th class="p-4">Status</th>
+                            <th class="p-4 text-right">Audit</th>
+                        </tr>
+                    </thead>
+                    <tbody class="divide-y divide-[#1C222C]">
+                        {% for b in recent_bookings %}
+                        <tr class="hover:bg-[#161B22] text-neutral-300">
+                            <td class="p-4 font-bold text-amber-400">{{ b.reference_code }}</td>
+                            <td class="p-4">{{ b.service.title }}</td>
+                            <td class="p-4">{{ b.customer.user.get_full_name }}</td>
+                            <td class="p-4">{{ b.worker.user.get_full_name|default:"Unassigned" }}</td>
+                            <td class="p-4">{{ b.get_booking_mode_display }} / {{ b.get_payment_preference_display }}</td>
+                            <td class="p-4">
+                                <span class="px-2 py-0.5 text-[10px] uppercase
+                                    {% if b.status == 'COMPLETED' %}bg-emerald-950 text-emerald-400 border border-emerald-800
+                                    {% elif b.status == 'IN_PROGRESS' %}bg-amber-950 text-amber-400 border border-amber-800
+                                    {% else %}bg-[#181D24] text-neutral-300 border border-[#283240]{% endif %}">
+                                    {{ b.get_status_display }}
+                                </span>
+                            </td>
+                            <td class="p-4 text-right">
+                                <a href="{% url 'bookings:detail' b.reference_code %}" class="text-amber-400 hover:underline">
+                                    Console →
+                                </a>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- Financial Ledger Audit (Transparent double-entry) -->
+        <div class="space-y-4 pt-4">
+            <h3 class="text-xs font-mono uppercase tracking-widest text-emerald-400 font-bold">
+                [ FINANCIAL LEDGER SETTLEMENTS ]
+            </h3>
+
+            <div class="bg-[#12151A] border border-[#222832] overflow-x-auto">
+                <table class="w-full text-left text-xs font-mono">
+                    <thead class="bg-[#0E1116] border-b border-[#222832] text-neutral-400 uppercase">
+                        <tr>
+                            <th class="p-4">Ledger Ref</th>
+                            <th class="p-4">Gross Billed</th>
+                            <th class="p-4 text-emerald-400">Worker Payout (92%)</th>
+                            <th class="p-4 text-amber-400">Coop Welfare (3%)</th>
+                            <th class="p-4 text-neutral-400">Platform Retained (5%)</th>
+                            <th class="p-4">Beneficiary</th>
+                        </tr>
+                    </thead>
+                    <tbody class="divide-y divide-[#1C222C]">
+                        {% for l in ledgers %}
+                        <tr class="hover:bg-[#161B22] text-neutral-300">
+                            <td class="p-4 font-bold text-neutral-300">#{{ l.id }} ({{ l.booking.reference_code }})</td>
+                            <td class="p-4">₹{{ l.gross_amount }}</td>
+                            <td class="p-4 font-bold text-emerald-400">₹{{ l.worker_net_earning }}</td>
+                            <td class="p-4 text-amber-400">₹{{ l.coop_welfare_fee }}</td>
+                            <td class="p-4 text-neutral-400">₹{{ l.platform_fee }}</td>
+                            <td class="p-4">{{ l.worker.user.get_full_name }} ({{ l.cooperative.name }})</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</section>
+{% endblock %}

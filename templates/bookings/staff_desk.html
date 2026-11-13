@@ -1,0 +1,130 @@
+{% extends "base.html" %}
+
+{% block title %}Front Desk Operations | GrandView Hotel & Resort{% endblock %}
+
+{% block content %}
+<div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+
+    <!-- Header & Live Counters -->
+    <div class="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-8">
+        <div>
+            <div class="flex items-center space-x-2">
+                <span class="px-2.5 py-0.5 rounded text-[10px] font-mono font-bold bg-blue-500/20 text-blue-300 border border-blue-500/30 uppercase">
+                    Staff Operations
+                </span>
+                <span class="text-xs text-slate-400 font-mono">Today: {{ today|date:"l, F j, Y" }}</span>
+            </div>
+            <h1 class="text-2xl sm:text-3xl font-serif font-bold text-white mt-1">Front Desk Reception Terminal</h1>
+            <p class="text-xs text-slate-400 mt-1">Manage guest arrivals, assign keys, process checkout room transitions, and look up booking files.</p>
+        </div>
+
+        <div class="flex items-center space-x-3">
+            <a href="{% url 'reports:housekeeping' %}" class="px-3.5 py-2 bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-semibold rounded-lg border border-slate-700 transition flex items-center space-x-1.5">
+                <i data-lucide="sparkles" class="w-4 h-4 text-amber-400"></i>
+                <span>Housekeeping Board</span>
+            </a>
+            <a href="{% url 'rooms:room_inventory' %}" class="px-3.5 py-2 bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-semibold rounded-lg border border-slate-700 transition flex items-center space-x-1.5">
+                <i data-lucide="key" class="w-4 h-4 text-emerald-400"></i>
+                <span>Room Inventory</span>
+            </a>
+        </div>
+    </div>
+
+    <!-- Quick Metrics Counter Ribbon -->
+    <div class="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-8">
+        <a href="?tab=arrivals" class="p-4 rounded-xl border transition {% if tab == 'arrivals' %}bg-blue-950/40 border-blue-500{% else %}bg-slate-900 border-slate-800 hover:border-slate-700{% endif %}">
+            <div class="text-[11px] font-mono uppercase text-slate-400">Today's Scheduled Arrivals</div>
+            <div class="text-3xl font-serif font-bold text-blue-400 mt-1">{{ counts.arrivals }}</div>
+            <div class="text-[11px] text-slate-400 mt-1">Awaiting key handover & check-in</div>
+        </a>
+
+        <a href="?tab=departures" class="p-4 rounded-xl border transition {% if tab == 'departures' %}bg-amber-950/40 border-amber-500{% else %}bg-slate-900 border-slate-800 hover:border-slate-700{% endif %}">
+            <div class="text-[11px] font-mono uppercase text-slate-400">Today's Scheduled Departures</div>
+            <div class="text-3xl font-serif font-bold text-amber-400 mt-1">{{ counts.departures }}</div>
+            <div class="text-[11px] text-slate-400 mt-1">Checkout & housekeeping turn-down</div>
+        </a>
+
+        <a href="?tab=in_house" class="p-4 rounded-xl border transition {% if tab == 'in_house' %}bg-emerald-950/40 border-emerald-500{% else %}bg-slate-900 border-slate-800 hover:border-slate-700{% endif %}">
+            <div class="text-[11px] font-mono uppercase text-slate-400">Current In-House Guests</div>
+            <div class="text-3xl font-serif font-bold text-emerald-400 mt-1">{{ counts.in_house }}</div>
+            <div class="text-[11px] text-slate-400 mt-1">Active registered rooms occupied</div>
+        </a>
+    </div>
+
+    <!-- Search & Tab Filter Bar -->
+    <div class="bg-slate-900 border border-slate-800 rounded-2xl p-4 mb-6 shadow-xl flex flex-col md:flex-row md:items-center justify-between gap-4">
+        <!-- Tab Switcher -->
+        <div class="flex items-center space-x-1 overflow-x-auto text-xs font-medium">
+            <a href="?tab=arrivals" class="px-3 py-1.5 rounded-lg transition {% if tab == 'arrivals' %}bg-amber-500 text-slate-950 font-bold{% else %}text-slate-400 hover:text-white hover:bg-slate-800{% endif %}">
+                Today's Arrivals ({{ counts.arrivals }})
+            </a>
+            <a href="?tab=departures" class="px-3 py-1.5 rounded-lg transition {% if tab == 'departures' %}bg-amber-500 text-slate-950 font-bold{% else %}text-slate-400 hover:text-white hover:bg-slate-800{% endif %}">
+                Today's Departures ({{ counts.departures }})
+            </a>
+            <a href="?tab=in_house" class="px-3 py-1.5 rounded-lg transition {% if tab == 'in_house' %}bg-amber-500 text-slate-950 font-bold{% else %}text-slate-400 hover:text-white hover:bg-slate-800{% endif %}">
+                In-House Guests ({{ counts.in_house }})
+            </a>
+            <a href="?tab=all" class="px-3 py-1.5 rounded-lg transition {% if tab == 'all' %}bg-amber-500 text-slate-950 font-bold{% else %}text-slate-400 hover:text-white hover:bg-slate-800{% endif %}">
+                All Reservations
+            </a>
+        </div>
+
+        <!-- Quick Search Input -->
+        <form action="" method="get" class="flex items-center space-x-2">
+            <input type="hidden" name="tab" value="{{ tab }}">
+            <div class="relative">
+                <i data-lucide="search" class="w-4 h-4 text-slate-500 absolute left-3 top-2.5"></i>
+                <input type="text" name="q" value="{{ search_query }}" placeholder="Search guest name, room # or ref..."
+                       class="bg-slate-950 border border-slate-700 rounded-lg pl-9 pr-3 py-1.5 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-amber-500 w-64">
+            </div>
+            {% if search_query %}
+            <a href="?tab={{ tab }}" class="text-xs text-slate-400 hover:text-white">&times; Clear</a>
+            {% endif %}
+        </form>
+    </div>
+
+    <!-- Reservations Table -->
+    <div class="bg-slate-900 border border-slate-800 rounded-2xl overflow-hidden shadow-2xl">
+        <table class="w-full text-left text-xs">
+            <thead class="bg-slate-950 text-slate-400 uppercase font-mono border-b border-slate-800">
+                <tr>
+                    <th class="p-3.5">Reference</th>
+                    <th class="p-3.5">Guest & Contact</th>
+                    <th class="p-3.5">Assigned Room</th>
+                    <th class="p-3.5">Dates / Nights</th>
+                    <th class="p-3.5">Total & Status</th>
+                    <th class="p-3.5 text-right">Operational Actions</th>
+                </tr>
+            </thead>
+            <tbody class="divide-y divide-slate-800">
+                {% if tab == 'arrivals' %}
+                    {% for res in arrivals %}
+                        {% include "bookings/partials/staff_reservation_row.html" with res=res %}
+                    {% empty %}
+                        <tr><td colspan="6" class="p-8 text-center text-slate-400">No arrivals scheduled for today.</td></tr>
+                    {% endfor %}
+                {% elif tab == 'departures' %}
+                    {% for res in departures %}
+                        {% include "bookings/partials/staff_reservation_row.html" with res=res %}
+                    {% empty %}
+                        <tr><td colspan="6" class="p-8 text-center text-slate-400">No guest departures scheduled for today.</td></tr>
+                    {% endfor %}
+                {% elif tab == 'in_house' %}
+                    {% for res in in_house %}
+                        {% include "bookings/partials/staff_reservation_row.html" with res=res %}
+                    {% empty %}
+                        <tr><td colspan="6" class="p-8 text-center text-slate-400">No guests currently in-house.</td></tr>
+                    {% endfor %}
+                {% else %}
+                    {% for res in all_bookings %}
+                        {% include "bookings/partials/staff_reservation_row.html" with res=res %}
+                    {% empty %}
+                        <tr><td colspan="6" class="p-8 text-center text-slate-400">No matching reservations found.</td></tr>
+                    {% endfor %}
+                {% endif %}
+            </tbody>
+        </table>
+    </div>
+
+</div>
+{% endblock %}

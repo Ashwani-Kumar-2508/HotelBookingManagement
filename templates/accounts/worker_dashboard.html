@@ -1,0 +1,190 @@
+{% extends 'base.html' %}
+
+{% block title %}Worker Guild Terminal — CoServe{% endblock %}
+
+{% block content %}
+<section class="bg-[#0B0D10] py-12 border-b border-[#1E232B]">
+    <div class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 space-y-8">
+        
+        <!-- Worker Header & Badge -->
+        <div class="bg-[#12151A] border border-[#222832] p-6 tech-border-accent">
+            <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                <div class="space-y-1">
+                    <div class="flex items-center gap-2">
+                        <span class="text-[10px] font-mono px-2 py-0.5 bg-emerald-950 text-emerald-400 border border-emerald-800">
+                            {{ worker.get_verification_status_display }}
+                        </span>
+                        <span class="text-xs font-mono text-neutral-400">
+                            ID: {{ worker.gov_id_type }} ({{ worker.gov_id_number }})
+                        </span>
+                    </div>
+                    <h1 class="text-2xl sm:text-3xl font-display font-black text-white uppercase mt-1">
+                        {{ worker.user.get_full_name }}
+                    </h1>
+                    <p class="text-xs font-mono text-amber-400">
+                        AFFILIATION: {{ worker.cooperative.name|default:"Independent Master Guild" }}
+                    </p>
+                </div>
+
+                <div class="flex items-center gap-6 text-xs font-mono">
+                    <div class="text-right">
+                        <span class="text-neutral-400 block text-[10px] uppercase">RATING SCORE</span>
+                        <span class="text-xl font-display font-bold text-amber-400">★ {{ worker.rating_avg }}</span>
+                        <span class="text-[10px] text-neutral-400 block">({{ worker.rating_count }} reviews)</span>
+                    </div>
+                    <div class="text-right border-l border-[#202734] pl-6">
+                        <span class="text-neutral-400 block text-[10px] uppercase">JOBS EXECUTED</span>
+                        <span class="text-xl font-display font-bold text-white">{{ worker.total_jobs_completed }}</span>
+                        <span class="text-[10px] text-emerald-400 block">Active Status</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Assigned Active Jobs (Field Dispatch View) -->
+        <div class="space-y-4">
+            <h3 class="text-xs font-mono uppercase tracking-widest text-amber-500 font-bold">
+                [ ACTIVE FIELD DISPATCH QUEUE ({{ active_jobs|length }}) ]
+            </h3>
+
+            <div class="grid grid-cols-1 gap-4">
+                {% for job in active_jobs %}
+                <div class="bg-[#12151A] border border-amber-500/50 p-6 space-y-4">
+                    <div class="flex flex-col sm:flex-row sm:items-center justify-between pb-3 border-b border-[#202734] gap-2">
+                        <div>
+                            <span class="text-[10px] font-mono px-2 py-0.5 bg-[#1B2028] text-amber-400 border border-[#2D3644]">
+                                REF: {{ job.reference_code }}
+                            </span>
+                            <h4 class="text-lg font-display font-bold text-white uppercase mt-1">{{ job.service.title }}</h4>
+                        </div>
+                        <span class="px-3 py-1 bg-amber-950 text-amber-300 border border-amber-800 text-xs font-mono font-bold uppercase">
+                            ● {{ job.get_status_display }}
+                        </span>
+                    </div>
+
+                    <div class="grid grid-cols-1 sm:grid-cols-3 gap-4 text-xs font-mono text-neutral-300">
+                        <div>
+                            <span class="text-neutral-400 block">CUSTOMER CONTACT:</span>
+                            <span class="text-white font-bold">{{ job.customer.user.get_full_name }}</span>
+                            <span class="text-neutral-400 block">{{ job.customer.user.phone_number }}</span>
+                        </div>
+                        <div>
+                            <span class="text-neutral-400 block">PREMISES ADDRESS:</span>
+                            <span class="text-white">{{ job.service_address }}, {{ job.locality }}</span>
+                        </div>
+                        <div>
+                            <span class="text-neutral-400 block">PAYOUT & MODE:</span>
+                            <span class="text-emerald-400 font-bold">₹{{ job.worker_earning }} (92% Net)</span>
+                            <span class="text-neutral-400 block">{{ job.get_payment_preference_display }}</span>
+                        </div>
+                    </div>
+
+                    <!-- Interactive OTP Verification Terminal -->
+                    <div class="p-4 bg-[#0B0D10] border border-[#202734] space-y-3">
+                        <div class="text-xs font-mono text-amber-400 font-bold uppercase">
+                            FIELD VERIFICATION ACTIONS:
+                        </div>
+
+                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                            <!-- Start OTP Action -->
+                            <div>
+                                {% if not job.otp_verification.is_start_verified %}
+                                <form method="post" action="{% url 'bookings:verify_start_otp' job.reference_code %}" class="flex gap-2">
+                                    {% csrf_token %}
+                                    <input type="text" name="start_otp" maxlength="4" placeholder="Ask Customer for 4-digit Start OTP" required
+                                           class="w-full bg-[#161B22] border border-[#2B3442] px-3 py-2 text-xs font-mono text-white focus:outline-none focus:border-amber-500">
+                                    <button type="submit" class="px-4 py-2 bg-emerald-500 hover:bg-emerald-400 text-black text-xs font-mono font-bold uppercase whitespace-nowrap">
+                                        VERIFY START
+                                    </button>
+                                </form>
+                                {% else %}
+                                <div class="p-2 bg-emerald-950/30 border border-emerald-800 text-emerald-400 text-xs font-mono">
+                                    ✓ START OTP VERIFIED (Work in progress)
+                                </div>
+                                {% endif %}
+                            </div>
+
+                            <!-- Completion OTP Action -->
+                            <div>
+                                {% if job.otp_verification.is_start_verified and not job.otp_verification.is_completion_verified %}
+                                <form method="post" action="{% url 'bookings:verify_completion_otp' job.reference_code %}" class="flex gap-2">
+                                    {% csrf_token %}
+                                    <input type="text" name="completion_otp" maxlength="4" placeholder="Ask Customer for Completion OTP" required
+                                           class="w-full bg-[#161B22] border border-[#2B3442] px-3 py-2 text-xs font-mono text-white focus:outline-none focus:border-amber-500">
+                                    <button type="submit" class="px-4 py-2 bg-amber-500 hover:bg-amber-400 text-black text-xs font-mono font-bold uppercase whitespace-nowrap">
+                                        COMPLETE JOB
+                                    </button>
+                                </form>
+                                {% elif job.otp_verification.is_completion_verified %}
+                                <div class="p-2 bg-emerald-950/30 border border-emerald-800 text-emerald-400 text-xs font-mono">
+                                    ✓ COMPLETION OTP VERIFIED & SETTLED
+                                </div>
+                                {% else %}
+                                <div class="p-2 bg-[#12151A] border border-[#222832] text-neutral-500 text-xs font-mono">
+                                    Verify Start OTP first to unlock Completion
+                                </div>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="text-right">
+                        <a href="{% url 'bookings:detail' job.reference_code %}" class="text-xs font-mono text-amber-400 hover:underline">
+                            Open Full Dispatch Console →
+                        </a>
+                    </div>
+                </div>
+                {% empty %}
+                <div class="p-8 bg-[#12151A] border border-[#222832] text-center text-xs font-mono text-neutral-400">
+                    No pending job dispatches at this moment. Status is Active for upcoming requests.
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+
+        <!-- Financial Ledger & Transparent Earnings -->
+        <div class="space-y-4 pt-6">
+            <h3 class="text-xs font-mono uppercase tracking-widest text-amber-500 font-bold">
+                [ TRANSPARENT EARNINGS & SETTLED LEDGER ]
+            </h3>
+
+            <div class="bg-[#12151A] border border-[#222832] overflow-x-auto">
+                <table class="w-full text-left text-xs font-mono">
+                    <thead class="bg-[#0E1116] border-b border-[#222832] text-neutral-400 uppercase">
+                        <tr>
+                            <th class="p-4">Booking Ref</th>
+                            <th class="p-4">Gross Billed</th>
+                            <th class="p-4 text-emerald-400">Your Net (92%)</th>
+                            <th class="p-4 text-amber-400">Coop Fund (3%)</th>
+                            <th class="p-4 text-neutral-400">Platform (5%)</th>
+                            <th class="p-4">Settlement</th>
+                        </tr>
+                    </thead>
+                    <tbody class="divide-y divide-[#1C222C]">
+                        {% for record in ledger_records %}
+                        <tr class="hover:bg-[#161B22] text-neutral-300">
+                            <td class="p-4 font-bold text-amber-400">{{ record.booking.reference_code }}</td>
+                            <td class="p-4">₹{{ record.gross_amount }}</td>
+                            <td class="p-4 font-bold text-emerald-400">₹{{ record.worker_net_earning }}</td>
+                            <td class="p-4 text-amber-400">₹{{ record.coop_welfare_fee }}</td>
+                            <td class="p-4 text-neutral-400">₹{{ record.platform_fee }}</td>
+                            <td class="p-4">
+                                <span class="px-2 py-0.5 bg-emerald-950 text-emerald-400 border border-emerald-800 text-[10px]">
+                                    SETTLED
+                                </span>
+                            </td>
+                        </tr>
+                        {% empty %}
+                        <tr>
+                            <td colspan="6" class="p-6 text-center text-neutral-400">
+                                Completed jobs will automatically deposit 92% net earnings into this ledger.
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</section>
+{% endblock %}

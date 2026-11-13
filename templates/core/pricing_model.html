@@ -1,0 +1,78 @@
+{% extends 'base.html' %}
+
+{% block title %}The Fair Split Ledger & Cooperative Model — CoServe{% endblock %}
+
+{% block content %}
+<section class="bg-[#0B0D10] py-16 border-b border-[#1E232B] grid-pattern">
+    <div class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 space-y-12">
+        
+        <div class="space-y-3 text-center">
+            <span class="text-xs font-mono uppercase tracking-widest text-amber-500 font-semibold">[ ECONOMIC MATRIX // THE COSERVE STANDARD ]</span>
+            <h1 class="text-3xl sm:text-5xl font-display font-black text-white uppercase">
+                TRANSPARENT SPLIT LEDGER ECONOMICS
+            </h1>
+            <p class="text-sm text-neutral-400 font-sans max-w-xl mx-auto">
+                Unlike corporate gig intermediaries that secretly take 25% to 35% commission, CoServe's double-entry split ledger guarantees workers keep 92% of their earnings.
+            </p>
+        </div>
+
+        <!-- 3-Tier Split Card -->
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+            <div class="bg-[#12151A] border border-emerald-800/80 p-6 space-y-4 tech-border-accent">
+                <span class="text-xs font-mono text-emerald-400 uppercase font-bold">WORKER SHARE</span>
+                <div class="text-4xl font-display font-black text-white">92.0%</div>
+                <p class="text-xs text-neutral-300 font-sans leading-relaxed">
+                    Direct living wage compensation credited to the trade worker immediately upon service completion and OTP handshake verification.
+                </p>
+            </div>
+
+            <div class="bg-[#12151A] border border-amber-800/80 p-6 space-y-4 tech-border-accent">
+                <span class="text-xs font-mono text-amber-400 uppercase font-bold">COOPERATIVE WELFARE</span>
+                <div class="text-4xl font-display font-black text-amber-400">3.0%</div>
+                <p class="text-xs text-neutral-300 font-sans leading-relaxed">
+                    Reserved exclusively for the worker guild emergency fund, group accident insurance, tool maintenance, and healthcare subsidies.
+                </p>
+            </div>
+
+            <div class="bg-[#12151A] border border-[#2B3340] p-6 space-y-4 tech-border-accent">
+                <span class="text-xs font-mono text-neutral-400 uppercase font-bold">PLATFORM TECH FEE</span>
+                <div class="text-4xl font-display font-black text-neutral-200">5.0%</div>
+                <p class="text-xs text-neutral-300 font-sans leading-relaxed">
+                    Covers hosting, database scaling, cryptographic OTP generation, SMS alerts, and platform security auditing.
+                </p>
+            </div>
+        </div>
+
+        <!-- Two-Factor OTP Handshake Section -->
+        <div id="otp" class="bg-[#12151A] border border-[#222832] p-8 space-y-6">
+            <h3 class="text-xs font-mono uppercase tracking-widest text-amber-500 font-bold">
+                [ TWO-FACTOR ON-SITE OTP VERIFICATION ]
+            </h3>
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-6 text-xs font-mono text-neutral-300">
+                <div class="space-y-2 p-4 bg-[#0B0D10] border border-[#1E232B]">
+                    <div class="text-emerald-400 font-bold uppercase text-sm">STAGE 1: START OTP</div>
+                    <p class="text-neutral-400 font-sans leading-relaxed">
+                        Customer gives the 4-digit Start OTP to the technician when they arrive at the premises with certified tools. The job status shifts from CONFIRMED to IN PROGRESS.
+                    </p>
+                </div>
+                <div class="space-y-2 p-4 bg-[#0B0D10] border border-[#1E232B]">
+                    <div class="text-amber-400 font-bold uppercase text-sm">STAGE 2: COMPLETION OTP</div>
+                    <p class="text-neutral-400 font-sans leading-relaxed">
+                        Shared by the customer ONLY after inspecting the finished service. Entering this code settles the financial ledger and completes the transaction.
+                    </p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Dual Payment Assurance -->
+        <div id="dualpay" class="bg-[#12151A] border border-[#222832] p-8 space-y-4">
+            <h3 class="text-xs font-mono uppercase tracking-widest text-amber-500 font-bold">
+                [ DUAL PAYMENT FREEDOM ]
+            </h3>
+            <p class="text-xs text-neutral-300 font-sans leading-relaxed">
+                Customers can choose to pay securely online via digital escrow (Razorpay test mode) or pay on completion directly to the technician via Cash or UPI on site once the work is certified. Both modes are protected by the same transparent split ledger.
+            </p>
+        </div>
+    </div>
+</section>
+{% endblock %}

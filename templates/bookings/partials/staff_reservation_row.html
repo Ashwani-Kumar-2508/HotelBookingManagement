@@ -1,0 +1,69 @@
+<tr class="hover:bg-slate-800/40 transition">
+    <!-- Reference -->
+    <td class="p-3.5">
+        <div class="font-mono font-bold text-white">{{ res.booking_reference }}</div>
+        <div class="text-[10px] text-slate-400 font-mono">{{ res.created_at|date:"M d, H:i" }}</div>
+    </td>
+
+    <!-- Guest -->
+    <td class="p-3.5">
+        <div class="font-semibold text-white">{{ res.guest_name }}</div>
+        <div class="text-[11px] text-slate-400 font-mono">{{ res.guest_email }}</div>
+        <div class="text-[10px] text-slate-400 font-mono">{{ res.guest_phone }}</div>
+        {% if res.special_requests %}
+        <div class="text-[10px] text-amber-400 mt-1 max-w-xs truncate" title="{{ res.special_requests }}">
+            ★ {{ res.special_requests }}
+        </div>
+        {% endif %}
+    </td>
+
+    <!-- Room -->
+    <td class="p-3.5">
+        <div class="font-bold text-amber-400 font-mono">Room {{ res.room.room_number }}</div>
+        <div class="text-[11px] text-slate-300">{{ res.room_type.name }}</div>
+        <div class="text-[10px] text-slate-400">Floor {{ res.room.floor }} &bull; Max {{ res.room_type.max_guests }}g</div>
+    </td>
+
+    <!-- Dates -->
+    <td class="p-3.5 font-mono">
+        <div class="text-slate-300">{{ res.check_in }} &rarr; {{ res.check_out }}</div>
+        <div class="text-[11px] text-amber-500">{{ res.num_nights }} Night{{ res.num_nights|pluralize }} &bull; {{ res.guests_count }} Guest{{ res.guests_count|pluralize }}</div>
+    </td>
+
+    <!-- Total & Status -->
+    <td class="p-3.5 font-mono">
+        <div class="text-white font-bold">${{ res.total_amount }}</div>
+        <div class="mt-1">
+            <span class="inline-block px-2 py-0.5 rounded text-[10px] font-bold
+                {% if res.status == 'CONFIRMED' %}bg-amber-500/20 text-amber-400 border border-amber-500/30
+                {% elif res.status == 'CHECKED_IN' %}bg-emerald-500/20 text-emerald-400 border border-emerald-500/30
+                {% elif res.status == 'CHECKED_OUT' %}bg-slate-800 text-slate-300 border border-slate-700
+                {% elif res.status == 'CANCELLED' %}bg-rose-950 text-rose-300 border border-rose-800{% endif %}">
+                {{ res.get_status_display }}
+            </span>
+        </div>
+    </td>
+
+    <!-- Operational Actions -->
+    <td class="p-3.5 text-right space-x-2">
+        {% if res.can_check_in %}
+        <form action="{% url 'bookings:staff_check_in' res.booking_reference %}" method="post" class="inline">
+            {% csrf_token %}
+            <button type="submit" class="px-3 py-1.5 bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-bold rounded-lg text-xs shadow transition">
+                Check In &rarr;
+            </button>
+        </form>
+        {% elif res.can_check_out %}
+        <form action="{% url 'bookings:staff_check_out' res.booking_reference %}" method="post" class="inline">
+            {% csrf_token %}
+            <button type="submit" class="px-3 py-1.5 bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold rounded-lg text-xs shadow transition">
+                Check Out &rarr;
+            </button>
+        </form>
+        {% endif %}
+
+        <a href="{% url 'bookings:confirmation' res.booking_reference %}" class="px-2.5 py-1.5 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-lg text-xs border border-slate-700 transition inline-block">
+            Voucher
+        </a>
+    </td>
+</tr>

@@ -1,0 +1,251 @@
+{% extends "base.html" %}
+
+{% block title %}Checkout & Confirm | GrandView Hotel & Resort{% endblock %}
+
+{% block content %}
+<div class="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+
+    <!-- Active 15-Minute Hold Countdown Banner -->
+    <div class="bg-gradient-to-r from-amber-950 via-slate-900 to-amber-950 border-2 border-amber-500 rounded-2xl p-4 sm:p-5 mb-8 shadow-2xl flex flex-col sm:flex-row items-center justify-between gap-4">
+        <div class="flex items-center space-x-3">
+            <div class="w-10 h-10 rounded-full bg-amber-500 text-slate-950 flex items-center justify-center font-bold">
+                <i data-lucide="lock" class="w-5 h-5"></i>
+            </div>
+            <div>
+                <div class="text-xs font-mono uppercase tracking-widest text-amber-300 font-bold">Room Inventory Temporarily Locked</div>
+                <div class="text-sm font-semibold text-white">
+                    Room {{ hold.room.room_number }} ({{ hold.room_type.name }}) is held exclusively for you.
+                </div>
+            </div>
+        </div>
+
+        <!-- Live Countdown Timer -->
+        <div class="bg-slate-950/90 border border-amber-500/50 px-4 py-2 rounded-xl text-center">
+            <div class="text-[10px] uppercase font-mono text-slate-400">Hold Expires In</div>
+            <div id="hold-timer" class="text-2xl font-mono font-bold text-amber-400">--:--</div>
+        </div>
+    </div>
+
+    <form method="post" id="checkout-form" class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+        {% csrf_token %}
+        <input type="hidden" name="confirm_payment" value="1">
+
+        <!-- Left 2 Columns: Guest Details & Sandbox Payment Form -->
+        <div class="lg:col-span-2 space-y-6">
+
+            <!-- Guest Details Card -->
+            <div class="bg-slate-900 border border-slate-800 rounded-2xl p-6 shadow-xl">
+                <div class="flex items-center space-x-2 mb-4">
+                    <span class="w-6 h-6 rounded-full bg-amber-500/20 text-amber-400 font-mono text-xs font-bold flex items-center justify-center">1</span>
+                    <h2 class="text-base font-serif font-bold text-white">Guest Information</h2>
+                </div>
+
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div class="sm:col-span-2">
+                        <label class="block text-xs font-semibold uppercase text-slate-300 mb-1">Primary Guest Full Name</label>
+                        <input type="text" name="guest_name" required value="{{ user.get_full_name|default:user.username }}"
+                               class="w-full bg-slate-950 border border-slate-700 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-amber-500">
+                    </div>
+
+                    <div>
+                        <label class="block text-xs font-semibold uppercase text-slate-300 mb-1">Email Address</label>
+                        <input type="email" name="guest_email" required value="{{ user.email }}"
+                               class="w-full bg-slate-950 border border-slate-700 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-amber-500">
+                    </div>
+
+                    <div>
+                        <label class="block text-xs font-semibold uppercase text-slate-300 mb-1">Mobile / Phone</label>
+                        <input type="tel" name="guest_phone" required value="{{ user.phone_number }}" placeholder="+1 (555) 012-3456"
+                               class="w-full bg-slate-950 border border-slate-700 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-amber-500">
+                    </div>
+
+                    <div class="sm:col-span-2">
+                        <label class="block text-xs font-semibold uppercase text-slate-300 mb-1">Special Requests (Optional)</label>
+                        <textarea name="special_requests" rows="2" placeholder="High floor, quiet corner, feather-free pillows, late evening arrival..."
+                                  class="w-full bg-slate-950 border border-slate-700 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-amber-500"></textarea>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Hospitality Add-Ons -->
+            <div class="bg-slate-900 border border-slate-800 rounded-2xl p-6 shadow-xl">
+                <div class="flex items-center space-x-2 mb-4">
+                    <span class="w-6 h-6 rounded-full bg-amber-500/20 text-amber-400 font-mono text-xs font-bold flex items-center justify-center">2</span>
+                    <h2 class="text-base font-serif font-bold text-white">Enhance Your Stay</h2>
+                </div>
+
+                <div class="space-y-3">
+                    <label class="flex items-start space-x-3 p-3.5 rounded-xl bg-slate-950 border border-slate-800 hover:border-slate-700 cursor-pointer transition">
+                        <input type="checkbox" name="has_breakfast" {% if has_breakfast %}checked{% endif %} onchange="this.form.submit()"
+                               class="mt-1 w-4 h-4 rounded text-amber-500 focus:ring-amber-500 border-slate-700 bg-slate-900">
+                        <div class="flex-grow">
+                            <div class="text-xs font-semibold text-white flex justify-between">
+                                <span>Artisan Breakfast Buffet</span>
+                                <span class="font-mono text-amber-400">+$25 / guest / night</span>
+                            </div>
+                            <p class="text-[11px] text-slate-400 mt-0.5">Chef-prepared gourmet eggs, freshly pressed organic juices, and artisanal bakery basket.</p>
+                        </div>
+                    </label>
+
+                    <label class="flex items-start space-x-3 p-3.5 rounded-xl bg-slate-950 border border-slate-800 hover:border-slate-700 cursor-pointer transition">
+                        <input type="checkbox" name="has_shuttle" {% if has_shuttle %}checked{% endif %} onchange="this.form.submit()"
+                               class="mt-1 w-4 h-4 rounded text-amber-500 focus:ring-amber-500 border-slate-700 bg-slate-900">
+                        <div class="flex-grow">
+                            <div class="text-xs font-semibold text-white flex justify-between">
+                                <span>Private Luxury Airport Shuttle</span>
+                                <span class="font-mono text-amber-400">+$45 flat</span>
+                            </div>
+                            <p class="text-[11px] text-slate-400 mt-0.5">Chauffeured Mercedes-Benz luxury sedan round-trip transfer from Palm Haven Airport.</p>
+                        </div>
+                    </label>
+                </div>
+            </div>
+
+            <!-- Simulated Payment Sandbox Section -->
+            <div class="bg-slate-900 border border-slate-800 rounded-2xl p-6 shadow-xl">
+                <div class="flex items-center justify-between mb-4">
+                    <div class="flex items-center space-x-2">
+                        <span class="w-6 h-6 rounded-full bg-amber-500/20 text-amber-400 font-mono text-xs font-bold flex items-center justify-center">3</span>
+                        <h2 class="text-base font-serif font-bold text-white">Simulated Payment Sandbox</h2>
+                    </div>
+                    <span class="px-2 py-0.5 rounded text-[10px] font-mono uppercase bg-emerald-950 text-emerald-400 border border-emerald-800">
+                        ✓ Test Sandbox Mode
+                    </span>
+                </div>
+
+                <div class="p-3 bg-amber-500/10 border border-amber-500/30 rounded-xl mb-4 text-xs text-amber-300">
+                    <strong>Sandbox Notice:</strong> No real currency will be charged. Use the pre-filled dummy test card credentials below to simulate instant payment authorization.
+                </div>
+
+                <div class="space-y-4">
+                    <div>
+                        <label class="block text-xs font-semibold uppercase text-slate-300 mb-1">Payment Method</label>
+                        <select name="payment_method" class="w-full bg-slate-950 border border-slate-700 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-amber-500 font-mono">
+                            <option value="CARD_SANDBOX" selected>💳 Credit / Debit Card (Sandbox 3D-Secure)</option>
+                            <option value="UPI_SANDBOX">📱 UPI / NetBanking Simulation</option>
+                            <option value="PAY_AT_HOTEL">🏨 Settle at Front Desk Check-In</option>
+                        </select>
+                    </div>
+
+                    <div>
+                        <label class="block text-xs font-semibold uppercase text-slate-300 mb-1">Card Number (Sandbox)</label>
+                        <input type="text" value="4242 4242 4242 4242" readonly
+                               class="w-full bg-slate-950 border border-slate-700 rounded-lg px-3 py-2 text-sm text-amber-400 font-mono focus:outline-none">
+                    </div>
+
+                    <div class="grid grid-cols-2 gap-4">
+                        <div>
+                            <label class="block text-xs font-semibold uppercase text-slate-300 mb-1">Expiration</label>
+                            <input type="text" value="12 / 28" readonly
+                                   class="w-full bg-slate-950 border border-slate-700 rounded-lg px-3 py-2 text-sm text-slate-300 font-mono">
+                        </div>
+                        <div>
+                            <label class="block text-xs font-semibold uppercase text-slate-300 mb-1">CVV / CVC</label>
+                            <input type="text" value="888" readonly
+                                   class="w-full bg-slate-950 border border-slate-700 rounded-lg px-3 py-2 text-sm text-slate-300 font-mono">
+                        </div>
+                    </div>
+                </div>
+
+                <div class="mt-6">
+                    <button type="submit" class="w-full bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-400 hover:to-amber-500 text-slate-950 font-bold py-3.5 rounded-xl shadow-xl shadow-amber-500/20 text-sm uppercase tracking-wider transition flex items-center justify-center space-x-2">
+                        <i data-lucide="check-circle" class="w-5 h-5"></i>
+                        <span>Authorize & Confirm Reservation (${{ pricing.total_amount }})</span>
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Right Column: Itemized Financial Summary -->
+        <div class="space-y-6">
+            <div class="bg-slate-900 border border-slate-800 rounded-2xl p-6 shadow-xl sticky top-20">
+                <h3 class="text-base font-serif font-bold text-white border-b border-slate-800 pb-3 mb-4">Reservation Summary</h3>
+
+                <!-- Room Snapshot -->
+                <div class="flex items-center space-x-3 mb-4">
+                    <img src="{{ hold.room_type.image_url }}" alt="{{ hold.room_type.name }}" class="w-16 h-16 rounded-xl object-cover border border-slate-800">
+                    <div>
+                        <div class="text-sm font-bold text-white">{{ hold.room_type.name }}</div>
+                        <div class="text-xs text-amber-400 font-mono">Room {{ hold.room.room_number }} (Fl. {{ hold.room.floor }})</div>
+                        <div class="text-[11px] text-slate-400">{{ hold.guests_count }} Guest{{ hold.guests_count|pluralize }}</div>
+                    </div>
+                </div>
+
+                <!-- Stay Dates -->
+                <div class="bg-slate-950 p-3 rounded-xl border border-slate-800 text-xs font-mono space-y-1 mb-4">
+                    <div class="flex justify-between text-slate-400">
+                        <span>Check-In:</span>
+                        <span class="text-white">{{ hold.check_in }}</span>
+                    </div>
+                    <div class="flex justify-between text-slate-400">
+                        <span>Check-Out:</span>
+                        <span class="text-white">{{ hold.check_out }}</span>
+                    </div>
+                    <div class="flex justify-between text-slate-400 pt-1 border-t border-slate-800">
+                        <span>Duration:</span>
+                        <span class="text-amber-400">{{ pricing.num_nights }} Night{{ pricing.num_nights|pluralize }}</span>
+                    </div>
+                </div>
+
+                <!-- Itemized Pricing Table -->
+                <div class="space-y-2 text-xs font-mono border-b border-slate-800 pb-4 mb-4">
+                    <div class="flex justify-between text-slate-300">
+                        <span>Nightly Avg (${{ pricing.average_nightly_rate }} x {{ pricing.num_nights }}n):</span>
+                        <span>${{ pricing.room_subtotal }}</span>
+                    </div>
+
+                    {% for add in pricing.addons_breakdown %}
+                    <div class="flex justify-between text-slate-300">
+                        <span class="truncate pr-2">+ {{ add.name }}:</span>
+                        <span>${{ add.amount }}</span>
+                    </div>
+                    {% endfor %}
+
+                    <div class="flex justify-between text-slate-400">
+                        <span>Hotel Tax ({{ pricing.tax_rate_percent }}%):</span>
+                        <span>${{ pricing.tax_amount }}</span>
+                    </div>
+
+                    <div class="flex justify-between text-slate-400">
+                        <span>Resort Fee ({{ pricing.service_fee_percent }}%):</span>
+                        <span>${{ pricing.service_fee }}</span>
+                    </div>
+                </div>
+
+                <!-- Total -->
+                <div class="flex items-baseline justify-between mb-2">
+                    <span class="text-sm font-bold text-white uppercase font-mono">Total Due:</span>
+                    <span class="text-2xl font-serif font-bold text-amber-400">${{ pricing.total_amount }}</span>
+                </div>
+                <div class="text-[10px] text-slate-400 text-right font-mono">All statutory taxes and resort fees included</div>
+            </div>
+        </div>
+    </form>
+</div>
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+    // 15-Minute Countdown Timer
+    let remainingSeconds = {{ remaining_seconds }};
+    const timerDisplay = document.getElementById('hold-timer');
+
+    function updateTimer() {
+        if (remainingSeconds <= 0) {
+            timerDisplay.textContent = "EXPIRED";
+            timerDisplay.classList.add('text-rose-500');
+            alert("Your 15-minute hold on Room {{ hold.room.room_number }} has expired. The page will reload to verify updated availability.");
+            window.location.href = "{% url 'bookings:search' %}";
+            return;
+        }
+
+        const mins = Math.floor(remainingSeconds / 60);
+        const secs = remainingSeconds % 60;
+        timerDisplay.textContent = `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
+        remainingSeconds--;
+    }
+
+    updateTimer();
+    const interval = setInterval(updateTimer, 1000);
+</script>
+{% endblock %}

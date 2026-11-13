@@ -1,0 +1,171 @@
+{% extends "base.html" %}
+
+{% block title %}Available Sanctuaries | GrandView Hotel & Resort{% endblock %}
+
+{% block content %}
+<div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+
+    <!-- Search / Filter Sticky Header -->
+    <div class="bg-slate-900 border border-slate-800 rounded-2xl p-5 mb-8 shadow-xl">
+        <form action="{% url 'bookings:search' %}" method="get" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3 items-end">
+            <!-- Check In -->
+            <div>
+                <label class="block text-xs font-semibold uppercase tracking-wider text-slate-300 mb-1">Check-In</label>
+                <input type="date" name="check_in" value="{{ check_in }}" min="{{ today }}" required
+                       class="w-full bg-slate-950 border border-slate-700 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-amber-500">
+            </div>
+
+            <!-- Check Out -->
+            <div>
+                <label class="block text-xs font-semibold uppercase tracking-wider text-slate-300 mb-1">Check-Out</label>
+                <input type="date" name="check_out" value="{{ check_out }}" min="{{ today }}" required
+                       class="w-full bg-slate-950 border border-slate-700 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-amber-500">
+            </div>
+
+            <!-- Guests -->
+            <div>
+                <label class="block text-xs font-semibold uppercase tracking-wider text-slate-300 mb-1">Guests</label>
+                <select name="guests" class="w-full bg-slate-950 border border-slate-700 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-amber-500">
+                    <option value="1" {% if guests == '1' %}selected{% endif %}>1 Guest</option>
+                    <option value="2" {% if guests == '2' %}selected{% endif %}>2 Guests</option>
+                    <option value="3" {% if guests == '3' %}selected{% endif %}>3 Guests</option>
+                    <option value="4" {% if guests == '4' %}selected{% endif %}>4 Guests</option>
+                    <option value="6" {% if guests == '6' %}selected{% endif %}>6 Guests (Suite)</option>
+                </select>
+            </div>
+
+            <!-- Room Type -->
+            <div>
+                <label class="block text-xs font-semibold uppercase tracking-wider text-slate-300 mb-1">Room Category</label>
+                <select name="room_type" class="w-full bg-slate-950 border border-slate-700 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-amber-500">
+                    <option value="">All Categories</option>
+                    {% for rt in room_types %}
+                    <option value="{{ rt.id }}" {% if selected_room_type == rt.id|stringformat:"i" %}selected{% endif %}>
+                        {{ rt.name }}
+                    </option>
+                    {% endfor %}
+                </select>
+            </div>
+
+            <!-- Submit -->
+            <div>
+                <button type="submit" class="w-full bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold py-2 px-4 rounded-lg text-sm transition flex items-center justify-center space-x-1 shadow">
+                    <i data-lucide="refresh-cw" class="w-4 h-4"></i>
+                    <span>Update Dates</span>
+                </button>
+            </div>
+        </form>
+    </div>
+
+    <!-- Error Alert if Validation Failed -->
+    {% if error_message %}
+    <div class="bg-rose-950/80 border border-rose-800 rounded-xl p-6 text-center text-rose-200 mb-8">
+        <i data-lucide="alert-triangle" class="w-8 h-8 mx-auto text-rose-400 mb-2"></i>
+        <h3 class="text-base font-bold">Invalid Availability Query</h3>
+        <p class="text-xs sm:text-sm text-rose-300 mt-1">{{ error_message }}</p>
+        <p class="text-xs text-rose-400 mt-2">Please select valid dates where check-out is after check-in and dates are in the future.</p>
+    </div>
+    {% endif %}
+
+    <!-- Availability Results Header -->
+    <div class="flex items-center justify-between mb-6">
+        <div>
+            <h1 class="text-2xl font-serif font-bold text-white">Available Accommodations</h1>
+            <p class="text-xs text-slate-400 mt-0.5">
+                Stay period: <span class="text-amber-400 font-mono">{{ check_in }}</span> to <span class="text-amber-400 font-mono">{{ check_out }}</span> 
+                &bull; Guests: <span class="text-white">{{ guests }}</span>
+            </p>
+        </div>
+        <span class="px-3 py-1 bg-slate-900 border border-slate-800 rounded-full text-xs font-mono text-slate-300">
+            {{ results|length }} Category Options Available
+        </span>
+    </div>
+
+    <!-- Results List -->
+    {% if results %}
+    <div class="space-y-6">
+        {% for item in results %}
+        <div class="bg-slate-900 border border-slate-800 rounded-2xl overflow-hidden hover:border-slate-700 transition flex flex-col lg:flex-row shadow-xl">
+            <!-- Image Section -->
+            <div class="lg:w-1/3 relative h-64 lg:h-auto overflow-hidden">
+                <img src="{{ item.room_type.image_url }}" alt="{{ item.room_type.name }}" class="w-full h-full object-cover">
+                <div class="absolute top-3 left-3 bg-emerald-950/90 border border-emerald-700 text-emerald-300 px-2.5 py-1 rounded text-xs font-mono font-bold flex items-center space-x-1">
+                    <span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
+                    <span>{{ item.available_count }} Room{{ item.available_count|pluralize }} Ready</span>
+                </div>
+            </div>
+
+            <!-- Content Section -->
+            <div class="lg:w-2/3 p-6 flex flex-col justify-between">
+                <div>
+                    <div class="flex flex-wrap items-start justify-between gap-2">
+                        <div>
+                            <h2 class="text-xl font-serif font-bold text-white">{{ item.room_type.name }}</h2>
+                            <p class="text-xs text-slate-400 mt-1 font-mono">
+                                {{ item.room_type.bed_type }} &bull; Max {{ item.room_type.max_guests }} Guests &bull; {{ item.room_type.size_sqft }} sq ft
+                            </p>
+                        </div>
+                        <div class="text-right">
+                            <div class="text-2xl font-bold font-mono text-amber-400">${{ item.pricing.average_nightly_rate }}</div>
+                            <div class="text-[10px] text-slate-400 uppercase font-mono">avg / night</div>
+                        </div>
+                    </div>
+
+                    <p class="text-xs text-slate-300 mt-3 leading-relaxed">{{ item.room_type.tagline|default:item.room_type.description }}</p>
+
+                    <!-- Amenities list -->
+                    <div class="mt-4 flex flex-wrap gap-2">
+                        {% for a in item.room_type.amenities.all|slice:":5" %}
+                        <span class="inline-flex items-center space-x-1 px-2.5 py-1 rounded bg-slate-950 border border-slate-800 text-xs text-slate-300">
+                            <i data-lucide="{{ a.icon }}" class="w-3 h-3 text-amber-400"></i>
+                            <span>{{ a.name }}</span>
+                        </span>
+                        {% endfor %}
+                    </div>
+                </div>
+
+                <!-- Price Breakdown & Hold CTA -->
+                <div class="mt-6 pt-4 border-t border-slate-800 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                    <div class="text-xs text-slate-400 font-mono">
+                        <div>{{ item.pricing.num_nights }} night{{ item.pricing.num_nights|pluralize }}: <span class="text-slate-200">${{ item.pricing.room_subtotal }}</span></div>
+                        <div class="text-[11px] text-slate-500">Taxes ({{ item.pricing.tax_rate_percent }}%) & Fees ({{ item.pricing.service_fee_percent }}%): ${{ item.pricing.tax_amount|add:item.pricing.service_fee }}</div>
+                        <div class="text-sm font-bold text-white mt-1">Total Stay: <span class="text-amber-400">${{ item.pricing.total_amount }}</span></div>
+                    </div>
+
+                    <form action="{% url 'bookings:create_hold' %}" method="post">
+                        {% csrf_token %}
+                        <input type="hidden" name="room_id" value="{{ item.sample_room.id }}">
+                        <input type="hidden" name="check_in" value="{{ check_in }}">
+                        <input type="hidden" name="check_out" value="{{ check_out }}">
+                        <input type="hidden" name="guests" value="{{ guests }}">
+                        <button type="submit" class="w-full sm:w-auto px-6 py-2.5 bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-400 hover:to-amber-500 text-slate-950 font-bold text-xs uppercase tracking-wider rounded-lg shadow-lg shadow-amber-500/20 transition flex items-center justify-center space-x-1">
+                            <i data-lucide="lock" class="w-4 h-4"></i>
+                            <span>Reserve & Hold for 15 Min</span>
+                        </button>
+                    </form>
+                </div>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+    {% elif not error_message %}
+    <!-- Zero Availability / Sold Out State -->
+    <div class="bg-slate-900 border border-slate-800 rounded-2xl p-12 text-center max-w-xl mx-auto shadow-xl">
+        <div class="w-16 h-16 rounded-full bg-slate-800 flex items-center justify-center mx-auto text-amber-400 mb-4">
+            <i data-lucide="calendar-x" class="w-8 h-8"></i>
+        </div>
+        <h3 class="text-lg font-serif font-bold text-white">Full Occupancy for Selected Dates</h3>
+        <p class="text-xs text-slate-400 mt-2 leading-relaxed">
+            All rooms in the selected category are currently booked or under active reservation holds for {{ check_in }} through {{ check_out }}.
+        </p>
+        <div class="mt-6">
+            <a href="{% url 'bookings:search' %}" class="inline-flex items-center space-x-2 px-4 py-2 bg-slate-800 hover:bg-slate-700 border border-slate-700 text-slate-200 text-xs font-semibold rounded-lg transition">
+                <i data-lucide="calendar" class="w-4 h-4"></i>
+                <span>Try Different Stay Dates</span>
+            </a>
+        </div>
+    </div>
+    {% endif %}
+
+</div>
+{% endblock %}

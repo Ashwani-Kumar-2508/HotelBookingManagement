@@ -1,0 +1,132 @@
+{% extends "base.html" %}
+
+{% block title %}System Audit Trail | GrandView Hotel & Resort{% endblock %}
+
+{% block content %}
+<div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+
+    <!-- Header -->
+    <div class="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-8">
+        <div>
+            <div class="flex items-center space-x-2">
+                <span class="px-2.5 py-0.5 rounded text-[10px] font-mono font-bold bg-amber-500/20 text-amber-300 border border-amber-500/30 uppercase">
+                    Security & Compliance
+                </span>
+                <span class="text-xs text-slate-400 font-mono">Immutable Operational Ledger</span>
+            </div>
+            <h1 class="text-2xl sm:text-3xl font-serif font-bold text-white mt-1">Material Actions Audit Trail</h1>
+            <p class="text-xs text-slate-400 mt-1">Tamper-evident chronological log of holds, confirmed reservations, check-in handovers, check-outs, cancellations, and status modifications.</p>
+        </div>
+
+        <a href="{% url 'reports:dashboard' %}" class="px-3.5 py-2 bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-semibold rounded-lg border border-slate-700 transition">
+            &larr; Operations Analytics
+        </a>
+    </div>
+
+    <!-- Filter by Action Bar -->
+    <div class="bg-slate-900 border border-slate-800 rounded-2xl p-4 mb-6 shadow-xl flex items-center justify-between">
+        <form action="" method="get" class="flex items-center space-x-3 text-xs">
+            <span class="text-slate-400 font-mono">Filter Event:</span>
+            <select name="action" onchange="this.form.submit()" class="bg-slate-950 border border-slate-700 rounded-lg px-3 py-1.5 text-white">
+                <option value="">All Operational Actions</option>
+                {% for act_code, act_label in actions %}
+                <option value="{{ act_code }}" {% if selected_action == act_code %}selected{% endif %}>{{ act_label }}</option>
+                {% endfor %}
+            </select>
+            {% if selected_action %}
+            <a href="{% url 'bookings:audit_trail' %}" class="text-amber-400 hover:underline">Clear Filter</a>
+            {% endif %}
+        </form>
+
+        <span class="text-xs font-mono text-slate-400">Total Logged Events: <strong class="text-white">{{ page_obj.paginator.count }}</strong></span>
+    </div>
+
+    <!-- Audit Log Table -->
+    <div class="bg-slate-900 border border-slate-800 rounded-2xl overflow-hidden shadow-2xl">
+        <table class="w-full text-left text-xs font-mono">
+            <thead class="bg-slate-950 text-slate-400 uppercase border-b border-slate-800">
+                <tr>
+                    <th class="p-3.5">Timestamp (UTC)</th>
+                    <th class="p-3.5">Action</th>
+                    <th class="p-3.5">Actor (User)</th>
+                    <th class="p-3.5">Target Room</th>
+                    <th class="p-3.5">Reservation</th>
+                    <th class="p-3.5">Context & Details</th>
+                </tr>
+            </thead>
+            <tbody class="divide-y divide-slate-800">
+                {% for log in page_obj %}
+                <tr class="hover:bg-slate-800/40 transition">
+                    <td class="p-3.5 text-slate-400 whitespace-nowrap">
+                        {{ log.created_at|date:"Y-m-d H:i:s" }}
+                    </td>
+                    <td class="p-3.5">
+                        <span class="inline-block px-2 py-0.5 rounded text-[10px] font-bold
+                            {% if log.action == 'BOOKING_CONFIRMED' %}bg-emerald-500/20 text-emerald-400 border border-emerald-500/30
+                            {% elif log.action == 'CHECKED_IN' %}bg-blue-500/20 text-blue-400 border border-blue-500/30
+                            {% elif log.action == 'CHECKED_OUT' %}bg-purple-500/20 text-purple-400 border border-purple-500/30
+                            {% elif log.action == 'CANCELLED' %}bg-rose-500/20 text-rose-400 border border-rose-500/30
+                            {% elif log.action == 'HOLD_CREATED' %}bg-amber-500/20 text-amber-400 border border-amber-500/30
+                            {% else %}bg-slate-800 text-slate-300 border border-slate-700{% endif %}">
+                            {{ log.get_action_display }}
+                        </span>
+                    </td>
+                    <td class="p-3.5 text-slate-300">
+                        {% if log.user %}
+                            {{ log.user.email }}
+                            <span class="block text-[10px] text-slate-500 font-sans">({{ log.user.get_role_display }})</span>
+                        {% else %}
+                            <span class="text-slate-500">System / Automated</span>
+                        {% endif %}
+                    </td>
+                    <td class="p-3.5">
+                        {% if log.room %}
+                            <span class="text-amber-400 font-bold">Room {{ log.room.room_number }}</span>
+                        {% else %}
+                            <span class="text-slate-600">--</span>
+                        {% endif %}
+                    </td>
+                    <td class="p-3.5">
+                        {% if log.reservation %}
+                            <a href="{% url 'bookings:confirmation' log.reservation.booking_reference %}" class="text-white hover:text-amber-400 underline">
+                                {{ log.reservation.booking_reference }}
+                            </a>
+                        {% else %}
+                            <span class="text-slate-600">--</span>
+                        {% endif %}
+                    </td>
+                    <td class="p-3.5 text-slate-300 max-w-md">
+                        <div class="font-bold text-white text-[11px]">{{ log.title }}</div>
+                        <div class="text-[10px] text-slate-400 font-sans mt-0.5 leading-relaxed">{{ log.details }}</div>
+                    </td>
+                </tr>
+                {% empty %}
+                <tr><td colspan="6" class="p-8 text-center text-slate-400">No audit events recorded for selected filter.</td></tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+
+    <!-- Pagination -->
+    {% if page_obj.has_other_pages %}
+    <div class="mt-6 flex items-center justify-between text-xs font-mono text-slate-400">
+        <div>
+            Page {{ page_obj.number }} of {{ page_obj.paginator.num_pages }}
+        </div>
+        <div class="flex items-center space-x-2">
+            {% if page_obj.has_previous %}
+            <a href="?page={{ page_obj.previous_page_number }}{% if selected_action %}&action={{ selected_action }}{% endif %}" class="px-3 py-1 bg-slate-800 rounded border border-slate-700 hover:text-white">
+                &larr; Previous
+            </a>
+            {% endif %}
+            {% if page_obj.has_next %}
+            <a href="?page={{ page_obj.next_page_number }}{% if selected_action %}&action={{ selected_action }}{% endif %}" class="px-3 py-1 bg-slate-800 rounded border border-slate-700 hover:text-white">
+                Next &rarr;
+            </a>
+            {% endif %}
+        </div>
+    </div>
+    {% endif %}
+
+</div>
+{% endblock %}

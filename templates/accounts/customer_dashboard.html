@@ -1,0 +1,124 @@
+{% extends 'base.html' %}
+
+{% block title %}Customer Portal — CoServe{% endblock %}
+
+{% block content %}
+<section class="bg-[#0B0D10] py-12 border-b border-[#1E232B]">
+    <div class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 space-y-8">
+        
+        <!-- Header -->
+        <div class="flex flex-col sm:flex-row sm:items-center justify-between pb-6 border-b border-[#1E232B] gap-4">
+            <div class="space-y-1">
+                <span class="text-xs font-mono uppercase tracking-widest text-amber-500 font-semibold">[ CUSTOMER PORTAL // HOUSEHOLD CONSOLE ]</span>
+                <h1 class="text-2xl sm:text-3xl font-display font-black text-white uppercase mt-1">
+                    {{ user.get_full_name|default:user.username }}
+                </h1>
+                <p class="text-xs font-mono text-neutral-400">
+                    SERVICE ADDRESS: {{ customer.address|default:"Not specified" }}, {{ customer.locality }} ({{ customer.pincode }})
+                </p>
+            </div>
+            <a href="{% url 'services:catalog' %}" class="px-5 py-2.5 bg-amber-500 hover:bg-amber-400 text-black font-mono font-bold text-xs uppercase tracking-wider flex items-center gap-2 shadow-lg shadow-amber-500/10">
+                <i data-lucide="plus" class="w-4 h-4"></i>
+                <span>REQUEST NEW SERVICE</span>
+            </a>
+        </div>
+
+        <!-- Active Dispatches Section -->
+        <div class="space-y-4">
+            <div class="flex items-center justify-between">
+                <h3 class="text-xs font-mono uppercase tracking-widest text-amber-500 font-bold">
+                    [ ACTIVE SERVICE DISPATCHES ({{ active_bookings|length }}) ]
+                </h3>
+            </div>
+
+            <div class="grid grid-cols-1 gap-4">
+                {% for booking in active_bookings %}
+                <div class="bg-[#12151A] border border-amber-500/40 p-6 space-y-4 tech-border-accent">
+                    <div class="flex flex-col sm:flex-row sm:items-center justify-between pb-4 border-b border-[#1F2530] gap-2">
+                        <div>
+                            <span class="text-[10px] font-mono px-2 py-0.5 bg-[#1B2028] text-amber-400 border border-[#2B3442]">
+                                REF: {{ booking.reference_code }}
+                            </span>
+                            <h4 class="text-lg font-display font-bold text-white uppercase mt-1">{{ booking.service.title }}</h4>
+                        </div>
+                        <span class="px-3 py-1 bg-amber-950/80 text-amber-300 border border-amber-800 text-xs font-mono font-bold uppercase animate-pulse">
+                            ● {{ booking.get_status_display }}
+                        </span>
+                    </div>
+
+                    <div class="grid grid-cols-1 sm:grid-cols-3 gap-4 text-xs font-mono">
+                        <div>
+                            <span class="text-neutral-400 block">SCHEDULE:</span>
+                            <span class="text-white">{{ booking.scheduled_date }} ({{ booking.time_slot }})</span>
+                        </div>
+                        <div>
+                            <span class="text-neutral-400 block">TECHNICIAN:</span>
+                            <span class="text-amber-400 font-bold">{{ booking.worker.user.get_full_name|default:"Assigning Guild Master..." }}</span>
+                        </div>
+                        <div>
+                            <span class="text-neutral-400 block">AMOUNT & PAYMENT:</span>
+                            <span class="text-white">₹{{ booking.total_amount }} ({{ booking.get_payment_preference_display }})</span>
+                        </div>
+                    </div>
+
+                    <!-- OTP Prompt for Customer -->
+                    {% if booking.otp_verification %}
+                    <div class="p-3 bg-[#0B0D10] border border-[#1E232B] flex flex-wrap items-center justify-between gap-4 text-xs font-mono">
+                        <div class="flex items-center gap-6">
+                            <div>
+                                <span class="text-neutral-400 text-[10px] block">START OTP (GIVE ON ARRIVAL):</span>
+                                <span class="text-emerald-400 font-bold text-sm tracking-widest">{{ booking.otp_verification.start_otp }}</span>
+                            </div>
+                            <div>
+                                <span class="text-neutral-400 text-[10px] block">COMPLETION OTP (GIVE AFTER WORK):</span>
+                                <span class="text-amber-400 font-bold text-sm tracking-widest">{{ booking.otp_verification.completion_otp }}</span>
+                            </div>
+                        </div>
+                        <a href="{% url 'bookings:detail' booking.reference_code %}" class="px-4 py-2 bg-[#1A1F27] hover:bg-amber-500 hover:text-black text-neutral-300 font-mono text-xs uppercase border border-[#2E3644] transition-colors">
+                            VIEW LIVE CONSOLE →
+                        </a>
+                    </div>
+                    {% endif %}
+                </div>
+                {% empty %}
+                <div class="p-8 bg-[#12151A] border border-[#222832] text-center text-xs font-mono text-neutral-400 space-y-2">
+                    <p>No active service dispatches underway.</p>
+                    <a href="{% url 'services:catalog' %}" class="text-amber-400 hover:underline">Explore technical catalog to request a certified trade worker →</a>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+
+        <!-- Past Order History -->
+        <div class="space-y-4 pt-6">
+            <h3 class="text-xs font-mono uppercase tracking-widest text-neutral-400 font-bold">
+                [ SERVICE HISTORY ({{ past_bookings|length }}) ]
+            </h3>
+
+            <div class="grid grid-cols-1 gap-3">
+                {% for booking in past_bookings %}
+                <div class="bg-[#12151A] border border-[#222832] p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-4 text-xs font-mono">
+                    <div class="space-y-1">
+                        <div class="flex items-center gap-2">
+                            <span class="text-amber-400 font-bold">[{{ booking.reference_code }}]</span>
+                            <span class="text-white uppercase font-bold">{{ booking.service.title }}</span>
+                        </div>
+                        <div class="text-neutral-400 text-[11px]">
+                            Completed on {{ booking.scheduled_date }} by {{ booking.worker.user.get_full_name }} • Billed ₹{{ booking.total_amount }}
+                        </div>
+                    </div>
+                    <div class="flex items-center gap-3">
+                        <span class="px-2 py-0.5 bg-emerald-950 text-emerald-400 border border-emerald-800 text-[10px]">
+                            COMPLETED
+                        </span>
+                        <a href="{% url 'bookings:detail' booking.reference_code %}" class="px-3 py-1.5 bg-[#181D24] text-neutral-300 hover:text-white border border-[#2A313C]">
+                            RECEIPT & OTP
+                        </a>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+</section>
+{% endblock %}

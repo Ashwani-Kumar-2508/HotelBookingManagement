@@ -1,0 +1,76 @@
+{% extends 'base.html' %}
+
+{% block title %}Certified Trade Workers Directory — CoServe{% endblock %}
+
+{% block content %}
+<section class="bg-[#0B0D10] py-12 border-b border-[#1E232B]">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-8">
+        
+        <div class="space-y-3">
+            <span class="text-xs font-mono uppercase tracking-widest text-amber-500 font-semibold">[ SECTION 03 // VERIFIED ROSTER ]</span>
+            <h1 class="text-3xl sm:text-4xl font-display font-black text-white uppercase">
+                CERTIFIED TRADE SPECIALISTS & MASTERS
+            </h1>
+            <p class="text-sm text-neutral-400 max-w-2xl font-sans">
+                Every technician is backed by verified national credentials, cooperative guild membership, and standardized safety compliance.
+            </p>
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+            {% for worker in workers %}
+            <div class="bg-[#12151A] border border-[#222832] p-6 space-y-4 hover:border-amber-500/50 transition-all flex flex-col justify-between">
+                <div class="space-y-4">
+                    <div class="flex items-center justify-between">
+                        <div class="w-12 h-12 bg-[#191E27] border border-[#2A3342] flex items-center justify-center font-display font-bold text-amber-400 text-lg">
+                            {{ worker.user.first_name|slice:":1" }}{{ worker.user.last_name|slice:":1" }}
+                        </div>
+                        <span class="text-[10px] font-mono px-2 py-0.5 bg-emerald-950 text-emerald-400 border border-emerald-800">
+                            {{ worker.get_verification_status_display }}
+                        </span>
+                    </div>
+
+                    <div>
+                        <h3 class="text-lg font-display font-bold text-white uppercase">{{ worker.user.get_full_name }}</h3>
+                        <p class="text-xs font-mono text-amber-400 mt-0.5">{{ worker.cooperative.name|default:"Independent Master Guild" }}</p>
+                        <p class="text-[11px] font-mono text-neutral-400 mt-1">LOCATION: {{ worker.locality }}, {{ worker.city }} ({{ worker.service_radius_km }}km)</p>
+                    </div>
+
+                    <div class="grid grid-cols-2 gap-2 text-xs font-mono py-2 border-y border-[#1E232B]">
+                        <div>
+                            <span class="text-[10px] text-neutral-400 block">RATING</span>
+                            <span class="text-amber-400 font-bold">★ {{ worker.rating_avg }}</span> ({{ worker.rating_count }})
+                        </div>
+                        <div>
+                            <span class="text-[10px] text-neutral-400 block">EXPERIENCE</span>
+                            <span class="text-white font-bold">{{ worker.experience_years }} Years</span>
+                        </div>
+                    </div>
+
+                    <p class="text-xs text-neutral-400 leading-relaxed font-sans line-clamp-3">
+                        {{ worker.bio }}
+                    </p>
+
+                    <!-- Service offerings -->
+                    <div class="space-y-1">
+                        <span class="text-[10px] font-mono text-neutral-400 uppercase block">CORE COMPETENCIES:</span>
+                        <div class="flex flex-wrap gap-1">
+                            {% for offer in worker.service_offers.all %}
+                            <span class="text-[10px] font-mono px-2 py-0.5 bg-[#171C24] text-neutral-300 border border-[#252E3C]">
+                                {{ offer.service.title|truncatewords:3 }}
+                            </span>
+                            {% endfor %}
+                        </div>
+                    </div>
+                </div>
+
+                <div class="pt-4 border-t border-[#1E232B]">
+                    <a href="{% url 'services:catalog' %}?worker_id={{ worker.id }}" class="block w-full py-2.5 bg-amber-500 hover:bg-amber-400 text-black text-center font-mono font-bold text-xs uppercase tracking-wider transition-colors shadow-lg shadow-amber-500/10">
+                        BOOK THIS SPECIALIST →
+                    </a>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+</section>
+{% endblock %}
