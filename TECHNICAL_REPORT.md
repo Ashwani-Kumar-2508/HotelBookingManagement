@@ -2,7 +2,7 @@
 
 **Author:** Technical Engineering Candidate  
 **Domain Assignment:** Hotel Booking  
-**Stack:** Python 3.13 / Django 5.1 / SQLite (ACID) / Tailwind CSS / HTMX / OpenAPI 3.0  
+**Stack:** React 18 / Vite / Tailwind CSS / Python 3.13 / Django 5.1 / SQLite (ACID) / OpenAPI 3.0  
 
 ---
 

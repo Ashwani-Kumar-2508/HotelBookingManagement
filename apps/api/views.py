@@ -4,8 +4,9 @@ from decimal import Decimal
 from django.http import JsonResponse, HttpResponse
 from django.views.decorators.csrf import csrf_exempt
 from django.shortcuts import get_object_or_404, render
+from django.db.models import Q
 from apps.rooms.models import Room, RoomType
-from apps.bookings.models import BookingHold, Reservation
+from apps.bookings.models import BookingHold, Reservation, BookingAuditLog
 from apps.bookings.services import BookingService, BookingConflictError, InvalidDateRangeError
 from apps.reports.services import ReportsService
 
@@ -31,11 +32,13 @@ def api_rooms_list(request):
             'name': rt.name,
             'slug': rt.slug,
             'tagline': rt.tagline,
+            'description': rt.description,
             'base_price': str(rt.base_price),
             'weekend_price': str(rt.weekend_price) if rt.weekend_price else None,
             'max_guests': rt.max_guests,
             'bed_type': rt.bed_type,
             'size_sqft': rt.size_sqft,
+            'image_url': rt.image_url,
             'amenities': [a.name for a in rt.amenities.all()],
             'total_rooms': rt.rooms.filter(is_active=True).count(),
         })
@@ -69,6 +72,8 @@ def api_availability(request):
                     'name': r.room_type.name,
                     'max_guests': r.room_type.max_guests,
                     'bed_type': r.room_type.bed_type,
+                    'image_url': r.room_type.image_url,
+                    'amenities': [a.name for a in r.room_type.amenities.all()[:4]],
                 },
                 'pricing': {
                     'num_nights': pricing['num_nights'],
@@ -112,10 +117,12 @@ def api_create_hold(request):
         return json_response({
             'success': True,
             'hold_id': str(hold.hold_id),
+            'room_id': hold.room.id,
             'room_number': hold.room.room_number,
             'room_type': hold.room_type.name,
             'check_in': hold.check_in.isoformat(),
             'check_out': hold.check_out.isoformat(),
+            'guests_count': hold.guests_count,
             'estimated_total': str(hold.estimated_total),
             'expires_at': hold.expires_at.isoformat(),
             'remaining_seconds': hold.remaining_seconds
@@ -142,7 +149,7 @@ def api_confirm_booking(request):
         special_requests = data.get('special_requests', '')
         payment_method = data.get('payment_method', 'CARD_SANDBOX')
 
-        # Fallback guest user if anonymous
+        # Link or create guest user
         guest_user = request.user
         if not guest_user.is_authenticated:
             from apps.accounts.models import User
@@ -172,10 +179,13 @@ def api_confirm_booking(request):
             'success': True,
             'booking_reference': reservation.booking_reference,
             'status': reservation.status,
+            'guest_name': reservation.guest_name,
+            'guest_email': reservation.guest_email,
             'room_number': reservation.room.room_number,
             'room_type': reservation.room_type.name,
             'check_in': reservation.check_in.isoformat(),
             'check_out': reservation.check_out.isoformat(),
+            'num_nights': reservation.num_nights,
             'total_amount': str(reservation.total_amount),
             'transaction_id': reservation.transaction_id,
             'paid_at': reservation.paid_at.isoformat() if reservation.paid_at else None,
@@ -195,11 +205,15 @@ def api_booking_detail(request, reference):
         'booking_reference': res.booking_reference,
         'guest_name': res.guest_name,
         'guest_email': res.guest_email,
+        'guest_phone': res.guest_phone,
+        'special_requests': res.special_requests,
         'room_number': res.room.room_number,
+        'floor': res.room.floor,
         'room_type': res.room_type.name,
         'check_in': res.check_in.isoformat(),
         'check_out': res.check_out.isoformat(),
         'num_nights': res.num_nights,
+        'guests_count': res.guests_count,
         'status': res.status,
         'payment_status': res.payment_status,
         'financials': {
@@ -210,6 +224,7 @@ def api_booking_detail(request, reference):
             'addons_amount': str(res.addons_amount),
             'total_amount': str(res.total_amount),
         },
+        'transaction_id': res.transaction_id,
         'created_at': res.created_at.isoformat(),
     })
 
@@ -226,7 +241,7 @@ def api_cancel_booking(request, reference):
         cancelled_res = BookingService.cancel_reservation(
             res.id,
             user=user,
-            reason="Cancelled via REST API",
+            reason="Cancelled via React Portal",
             ip_address=request.META.get('REMOTE_ADDR', '')
         )
         return json_response({
@@ -290,6 +305,167 @@ def api_check_out(request, reference):
         return json_error(str(e), status=400)
 
 
+def api_reservations_list(request):
+    """GET /api/v1/reservations/?email=...&status=...&q=..."""
+    qs = Reservation.objects.select_related('room', 'room_type', 'guest').order_by('-check_in')
+    
+    email = request.GET.get('email')
+    status = request.GET.get('status')
+    q = request.GET.get('q')
+
+    if email:
+        qs = qs.filter(guest_email__iexact=email.strip())
+    if status:
+        qs = qs.filter(status=status)
+    if q:
+        qs = qs.filter(
+            Q(booking_reference__icontains=q) |
+            Q(guest_name__icontains=q) |
+            Q(room__room_number__icontains=q) |
+            Q(guest_email__icontains=q)
+        )
+
+    items = []
+    for r in qs[:100]:
+        items.append({
+            'id': r.id,
+            'booking_reference': r.booking_reference,
+            'guest_name': r.guest_name,
+            'guest_email': r.guest_email,
+            'guest_phone': r.guest_phone,
+            'special_requests': r.special_requests,
+            'room_number': r.room.room_number,
+            'floor': r.room.floor,
+            'room_type': r.room_type.name,
+            'image_url': r.room_type.image_url,
+            'check_in': r.check_in.isoformat(),
+            'check_out': r.check_out.isoformat(),
+            'num_nights': r.num_nights,
+            'guests_count': r.guests_count,
+            'status': r.status,
+            'total_amount': str(r.total_amount),
+            'can_check_in': r.can_check_in,
+            'can_check_out': r.can_check_out,
+            'can_cancel': r.can_cancel,
+        })
+    return json_response({'success': True, 'count': len(items), 'reservations': items})
+
+
+def api_inventory_list(request):
+    """GET /api/v1/inventory/ - Returns all physical rooms with status & notes."""
+    rooms = Room.objects.select_related('room_type').all().order_by('floor', 'room_number')
+    items = []
+    for r in rooms:
+        items.append({
+            'id': r.id,
+            'room_number': r.room_number,
+            'floor': r.floor,
+            'status': r.status,
+            'housekeeping_notes': r.housekeeping_notes,
+            'room_type': {
+                'id': r.room_type.id,
+                'name': r.room_type.name,
+                'base_price': str(r.room_type.base_price),
+                'weekend_price': str(r.room_type.weekend_price) if r.room_type.weekend_price else None,
+                'max_guests': r.room_type.max_guests,
+                'bed_type': r.room_type.bed_type,
+            }
+        })
+    return json_response({'success': True, 'count': len(items), 'rooms': items})
+
+
+@csrf_exempt
+def api_update_room_status(request, pk):
+    """POST /api/v1/rooms/<id>/status/"""
+    if request.method != 'POST':
+        return json_error("Method not allowed. Use POST.", status=405)
+
+    room = get_object_or_404(Room, pk=pk)
+    try:
+        data = json.loads(request.body.decode('utf-8'))
+        new_status = data.get('status')
+        notes = data.get('notes', room.housekeeping_notes)
+
+        if new_status not in dict(Room.Status.choices):
+            return json_error("Invalid status choice.")
+
+        old_status = room.status
+        room.status = new_status
+        room.housekeeping_notes = notes
+        room.save()
+
+        BookingAuditLog.objects.create(
+            room=room,
+            user=request.user if request.user.is_authenticated else None,
+            action=BookingAuditLog.Action.ROOM_STATUS_CHANGED,
+            title=f"Room {room.room_number} status changed to {room.get_status_display()}",
+            details=f"Status transitioned from {old_status} to {new_status} via React Console."
+        )
+
+        return json_response({
+            'success': True,
+            'room_number': room.room_number,
+            'status': room.status,
+            'housekeeping_notes': room.housekeeping_notes
+        })
+    except Exception as e:
+        return json_error(str(e), status=400)
+
+
+@csrf_exempt
+def api_update_rate(request, pk):
+    """POST /api/v1/rooms/types/<id>/rate/"""
+    if request.method != 'POST':
+        return json_error("Method not allowed. Use POST.", status=405)
+
+    rt = get_object_or_404(RoomType, pk=pk)
+    try:
+        data = json.loads(request.body.decode('utf-8'))
+        base_price = data.get('base_price')
+        weekend_price = data.get('weekend_price')
+
+        if base_price:
+            rt.base_price = Decimal(str(base_price))
+        if weekend_price:
+            rt.weekend_price = Decimal(str(weekend_price))
+        rt.save()
+
+        BookingAuditLog.objects.create(
+            user=request.user if request.user.is_authenticated else None,
+            action=BookingAuditLog.Action.RATE_UPDATED,
+            title=f"Rate Updated: {rt.name}",
+            details=f"New Weekday Base: ${rt.base_price}, Weekend: ${rt.weekend_price}"
+        )
+
+        return json_response({
+            'success': True,
+            'room_type_id': rt.id,
+            'name': rt.name,
+            'base_price': str(rt.base_price),
+            'weekend_price': str(rt.weekend_price)
+        })
+    except Exception as e:
+        return json_error(str(e), status=400)
+
+
+def api_audit_logs(request):
+    """GET /api/v1/audit/"""
+    logs = BookingAuditLog.objects.select_related('reservation', 'room', 'user').order_by('-created_at')[:50]
+    items = []
+    for l in logs:
+        items.append({
+            'id': l.id,
+            'action': l.action,
+            'title': l.title,
+            'details': l.details,
+            'created_at': l.created_at.strftime('%Y-%m-%d %H:%M:%S'),
+            'user': l.user.email if l.user else 'System',
+            'room_number': l.room.room_number if l.room else None,
+            'booking_reference': l.reservation.booking_reference if l.reservation else None,
+        })
+    return json_response({'success': True, 'count': len(items), 'logs': items})
+
+
 def api_operations_report(request):
     """GET /api/v1/reports/operations/?start_date=YYYY-MM-DD&end_date=YYYY-MM-DD"""
     start_str = request.GET.get('start_date')
@@ -302,12 +478,27 @@ def api_operations_report(request):
         return json_response({
             'success': True,
             'date_range': {'start': start_date.isoformat(), 'end': end_date.isoformat()},
+            'num_days': report['num_days'],
             'occupancy_rate_pct': report['occupancy_rate'],
             'total_revenue': str(report['total_revenue']),
             'adr': str(report['adr']),
             'revpar': str(report['revpar']),
             'total_rooms': report['total_rooms'],
+            'total_occupied_nights': report['total_occupied_room_nights'],
+            'total_available_nights': report['total_room_nights_available'],
             'room_statuses': report['room_statuses'],
+            'daily_breakdown': [
+                {
+                    'date': d['date'].isoformat(),
+                    'date_str': d['date_str'],
+                    'day_name': d['day_name'],
+                    'occupied_rooms': d['occupied_rooms'],
+                    'available_rooms': d['available_rooms'],
+                    'occupancy_pct': d['occupancy_pct'],
+                    'revenue': str(d['revenue']),
+                }
+                for d in report['daily_breakdown']
+            ]
         })
     except Exception as e:
         return json_error(str(e), status=400)
@@ -320,113 +511,6 @@ def swagger_docs_view(request):
 
 def openapi_spec_view(request):
     """OpenAPI 3.0 JSON specification."""
-    spec = {
-        "openapi": "3.0.3",
-        "info": {
-            "title": "GrandView Hotel Management & Reservation API",
-            "version": "1.0.0",
-            "description": "Production REST API for room inventory, availability checks, 15-minute temporary holds, concurrent booking processing, front-desk check-in/out, and operations reports."
-        },
-        "servers": [{"url": "http://127.0.0.1:8000"}],
-        "paths": {
-            "/api/v1/rooms/": {
-                "get": {
-                    "summary": "List all active room types",
-                    "responses": {"200": {"description": "List of room types with rates and capacity"}}
-                }
-            },
-            "/api/v1/availability/": {
-                "get": {
-                    "summary": "Query room availability for date range",
-                    "parameters": [
-                        {"name": "check_in", "in": "query", "required": True, "schema": {"type": "string", "format": "date"}},
-                        {"name": "check_out", "in": "query", "required": True, "schema": {"type": "string", "format": "date"}},
-                        {"name": "guests", "in": "query", "required": False, "schema": {"type": "integer"}}
-                    ],
-                    "responses": {"200": {"description": "Available rooms and pricing breakdown"}}
-                }
-            },
-            "/api/v1/holds/": {
-                "post": {
-                    "summary": "Place a 15-minute temporary hold on a room",
-                    "requestBody": {
-                        "required": True,
-                        "content": {"application/json": {"schema": {
-                            "type": "object",
-                            "properties": {
-                                "room_id": {"type": "integer"},
-                                "check_in": {"type": "string", "format": "date"},
-                                "check_out": {"type": "string", "format": "date"},
-                                "guests": {"type": "integer"}
-                            }
-                        }}}
-                    },
-                    "responses": {
-                        "201": {"description": "Hold created successfully"},
-                        "409": {"description": "Room already reserved or held"}
-                    }
-                }
-            },
-            "/api/v1/bookings/": {
-                "post": {
-                    "summary": "Confirm reservation using hold token and simulated payment",
-                    "requestBody": {
-                        "required": True,
-                        "content": {"application/json": {"schema": {
-                            "type": "object",
-                            "properties": {
-                                "hold_id": {"type": "string", "format": "uuid"},
-                                "guest_name": {"type": "string"},
-                                "guest_email": {"type": "string", "format": "email"},
-                                "guest_phone": {"type": "string"},
-                                "payment_method": {"type": "string"}
-                            }
-                        }}}
-                    },
-                    "responses": {
-                        "201": {"description": "Reservation confirmed and guaranteed"},
-                        "409": {"description": "Concurrency or hold expiry error"}
-                    }
-                }
-            },
-            "/api/v1/bookings/{reference}/": {
-                "get": {
-                    "summary": "Retrieve booking voucher details",
-                    "parameters": [{"name": "reference", "in": "path", "required": True, "schema": {"type": "string"}}],
-                    "responses": {"200": {"description": "Reservation details and financials"}}
-                }
-            },
-            "/api/v1/bookings/{reference}/cancel/": {
-                "post": {
-                    "summary": "Cancel booking and release inventory",
-                    "parameters": [{"name": "reference", "in": "path", "required": True, "schema": {"type": "string"}}],
-                    "responses": {"200": {"description": "Cancelled and refunded"}}
-                }
-            },
-            "/api/v1/bookings/{reference}/check-in/": {
-                "post": {
-                    "summary": "Front desk check-in action",
-                    "parameters": [{"name": "reference", "in": "path", "required": True, "schema": {"type": "string"}}],
-                    "responses": {"200": {"description": "Guest checked in, room marked OCCUPIED"}}
-                }
-            },
-            "/api/v1/bookings/{reference}/check-out/": {
-                "post": {
-                    "summary": "Front desk check-out action",
-                    "parameters": [{"name": "reference", "in": "path", "required": True, "schema": {"type": "string"}}],
-                    "responses": {"200": {"description": "Guest checked out, room marked DIRTY/CLEANING"}}
-                }
-            },
-            "/api/v1/reports/operations/": {
-                "get": {
-                    "summary": "Retrieve occupancy rate, revenue, ADR, and RevPAR",
-                    "parameters": [
-                        {"name": "start_date", "in": "query", "required": False, "schema": {"type": "string", "format": "date"}},
-                        {"name": "end_date", "in": "query", "required": False, "schema": {"type": "string", "format": "date"}}
-                    ],
-                    "responses": {"200": {"description": "Aggregated operations report"}}
-                }
-            }
-        }
-    }
-    return JsonResponse(spec)
+    # (Spec definition)
+    from apps.api.openapi import get_openapi_spec
+    return JsonResponse(get_openapi_spec())

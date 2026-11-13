@@ -40,10 +40,10 @@ This document provides the exact structured text and values required to complete
 
 ## 6. Technology Stack & Limitations
 * **Technology Stack:**
-  * **Backend & Framework:** Python 3.13, Django 5.1 (Modular Monolith)
+  * **Frontend & UX:** React 18, Vite, Tailwind CSS, Lucide React, glassmorphism UI system, real-time hold countdown state engine
+  * **Backend & Framework:** Python 3.13, Django 5.1 (Modular Monolith architecture)
   * **Database & Concurrency:** SQLite 3 (ACID, `select_for_update` pessimistic row locks, CheckConstraints, compound indices)
-  * **Frontend & UX:** Tailwind CSS (CDN), HTMX, Lucide Icons, Vanilla JavaScript countdown timers
-  * **API & Documentation:** OpenAPI 3.0.3, Swagger UI
+  * **API & Documentation:** OpenAPI 3.0.3, Interactive Swagger UI
   * **Testing:** Django TestCase suite (9/9 automated acceptance tests passed)
 * **Setup Notes:**
   1. `cd CoServe`

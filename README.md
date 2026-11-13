@@ -1,12 +1,13 @@
 # GrandView Luxury Hotel & Resort — PMS & Reservation System
 
+[![React](https://img.shields.io/badge/Frontend-React%2018%20%2B%20Vite%20%2B%20Tailwind-61DAFB.svg)](https://react.dev)
 [![Python](https://img.shields.io/badge/Python-3.13-blue.svg)](https://python.org)
 [![Django](https://img.shields.io/badge/Django-5.1-092E20.svg)](https://djangoproject.com)
 [![Architecture](https://img.shields.io/badge/Architecture-Modular%20Monolith-amber.svg)](#architecture--separation-of-concerns)
 [![API](https://img.shields.io/badge/API-OpenAPI%203.0%20%2B%20Swagger-green.svg)](#restful-api--swagger-documentation)
 [![Tests](https://img.shields.io/badge/Tests-9%2F9%20Passing-brightgreen.svg)](#running-automated-acceptance-tests)
 
-**GrandView Luxury Hotel & Resort** is an enterprise-grade Property Management System (PMS) and customer-facing reservation platform engineered for hotel booking operations. It supports end-to-end customer booking journeys and full front-desk / administrative workflows with strict transactional data integrity.
+**GrandView Luxury Hotel & Resort** is an enterprise-grade Property Management System (PMS) and customer-facing reservation platform engineered for hotel booking operations. It features a modern, responsive **React 18 Single Page Application (SPA)** with real-time state management, backed by a robust Django 5 REST engine enforcing strict transactional data integrity.
 
 ---
 
@@ -164,9 +165,6 @@ cd CoServe
 
 # Activate Python virtual environment (Windows PowerShell)
 .\venv\Scripts\Activate.ps1
-
-# Or on macOS/Linux:
-# source venv/bin/activate
 ```
 
 ### 2. Apply Database Migrations & Seed Demo Records
@@ -179,10 +177,18 @@ python manage.py seed_hotel_data
 ```
 
 ### 3. Launch Development Server
-```powershell
-python manage.py runserver
-```
-Open **`http://127.0.0.1:8000/`** in your browser.
+* **Option A: Full-Stack React SPA (Served by Django at port 8000)**:
+  ```powershell
+  python manage.py runserver 127.0.0.1:8000
+  ```
+  Visit **`http://127.0.0.1:8000/`** in your browser. (The production React 18 build is bundled and served directly by Django).
+
+* **Option B: Vite React Live Development Server (Port 5173 with HMR)**:
+  ```powershell
+  cd frontend
+  npm run dev
+  ```
+  Visit **`http://localhost:5173/`** in your browser (proxies all API calls to Django).
 
 ---
 

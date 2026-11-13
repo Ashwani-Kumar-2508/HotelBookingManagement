@@ -17,5 +17,10 @@ urlpatterns = [
     path('v1/bookings/<str:reference>/cancel/', views.api_cancel_booking, name='cancel_booking'),
     path('v1/bookings/<str:reference>/check-in/', views.api_check_in, name='check_in'),
     path('v1/bookings/<str:reference>/check-out/', views.api_check_out, name='check_out'),
+    path('v1/reservations/', views.api_reservations_list, name='reservations_list'),
+    path('v1/inventory/', views.api_inventory_list, name='inventory_list'),
+    path('v1/rooms/<int:pk>/status/', views.api_update_room_status, name='update_room_status'),
+    path('v1/rooms/types/<int:pk>/rate/', views.api_update_rate, name='update_rate'),
+    path('v1/audit/', views.api_audit_logs, name='audit_logs'),
     path('v1/reports/operations/', views.api_operations_report, name='operations_report'),
 ]
