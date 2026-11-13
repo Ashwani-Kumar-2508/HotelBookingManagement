@@ -5,7 +5,7 @@ This document provides the exact structured text and values required to complete
 ---
 
 ## 1. Candidate Identification
-* **Full Name:** Ashwanth (or your full legal name)
+* **Full Name:** Ashwani Kumar
 * **Registration / Roll Number:** [Enter your University / College Registration Number, e.g., 2023-CS-XXXX]
 * **University Email:** [Enter your official University / College Email, e.g., student@university.edu]
 
@@ -18,9 +18,9 @@ This document provides the exact structured text and values required to complete
 ---
 
 ## 3. Code and Version
-* **Repository URL:** [Insert your Git Repository URL, e.g. GitHub/GitLab link]
+* **Repository URL:** https://github.com/Ashwani-Kumar-2508/HotelBookingManagement
 * **Primary Branch:** `main`
-* **Final Commit ID:** `8317631`
+* **Final Commit ID:** `50d7b1d`
 * **Reviewer Access:** Public repository (or granted reviewer read access)
 
 ---
