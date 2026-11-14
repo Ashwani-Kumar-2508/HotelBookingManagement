@@ -24,11 +24,11 @@ wheels/
 venv/
 env/
 ENV/
+.venv/
 
 # Node
 node_modules/
 frontend/node_modules/
-dist/
 frontend/dist/
 
 # Django
@@ -38,7 +38,7 @@ db.sqlite3
 db.sqlite3-journal
 /media/uploads/
 
-# Environment Variables
+# Environment Variables - NEVER commit these
 .env
 .env.*
 !.env.example
@@ -47,12 +47,20 @@ db.sqlite3-journal
 media/
 !media/.gitkeep
 
-# IDE
+# IDE & Editor
 .vscode/
 .idea/
 *.swp
 *.swo
+*.sublime-project
+*.sublime-workspace
 
 # OS
 .DS_Store
 Thumbs.db
+desktop.ini
+
+# Coverage / Testing artifacts
+.coverage
+htmlcov/
+.pytest_cache/
