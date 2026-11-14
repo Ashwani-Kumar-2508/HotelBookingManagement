@@ -40,6 +40,12 @@ db.sqlite3-journal
 
 # Environment Variables
 .env
+.env.*
+!.env.example
+
+# Media uploads (user-generated content, never commit)
+media/
+!media/.gitkeep
 
 # IDE
 .vscode/

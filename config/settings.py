@@ -16,7 +16,9 @@ load_dotenv(BASE_DIR / '.env')
 # Add apps folder to Python path
 sys.path.insert(0, str(BASE_DIR / 'apps'))
 
-SECRET_KEY = os.getenv('SECRET_KEY', 'django-insecure-grandview-hotel-secret-key-production-seed-2026')
+SECRET_KEY = os.getenv('SECRET_KEY')
+if not SECRET_KEY:
+    raise ValueError("SECRET_KEY environment variable is not set. Add it to your .env file.")
 DEBUG = os.getenv('DEBUG', 'True') == 'True'
 
 ALLOWED_HOSTS = [host.strip() for host in os.getenv('ALLOWED_HOSTS', 'localhost,127.0.0.1,testserver').split(',') if host.strip()]
