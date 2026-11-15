@@ -11,7 +11,19 @@ from apps.bookings.services import BookingService
 class Command(BaseCommand):
     help = 'Seeds database with realistic hotel rooms, rates, amenities, demo accounts, active reservations, and audit trail.'
 
+    def add_arguments(self, parser):
+        parser.add_argument(
+            '--force',
+            action='store_true',
+            help='Force re-seed even if data already exists (clears existing records first).',
+        )
+
     def handle(self, *args, **options):
+        # Idempotent: skip if data already seeded (safe for production restarts)
+        if User.objects.filter(email='admin@grandview.com').exists() and not options.get('force'):
+            self.stdout.write(self.style.SUCCESS("Seed data already present. Skipping. Use --force to re-seed."))
+            return
+
         self.stdout.write(self.style.NOTICE("Clearing existing domain records..."))
         BookingAuditLog.objects.all().delete()
         Reservation.objects.all().delete()
